@@ -38,6 +38,7 @@ dependencies:
   maplibre: ^0.3.6
   flutter_secure_storage: ^11.2.0
   synchronized: ^3.5.0
+  dio: ^5.11.1
 
 dev_dependencies:
   flutter_test:
