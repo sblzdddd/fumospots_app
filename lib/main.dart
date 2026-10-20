@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'core/di/locator.dart';
+import 'features/auth/auth_controller.dart';
+
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  setupDI();
+  getIt<AuthController>().init();
   runApp(const MyApp());
 }
 
