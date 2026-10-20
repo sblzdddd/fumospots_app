@@ -1,8 +1,56 @@
 import 'package:get_it/get_it.dart';
-import '../services/fumospots_storage.dart';
+
+import '../../features/auth/auth_controller.dart';
+import '../../features/auth/auth_repository.dart';
+import '../../features/auth/auth_session_store.dart';
+import '../config/fumospots_config.dart';
+import '../services/fumo_client.dart';
+import '../services/fumo_store.dart';
+import '../services/interceptors/fumo_auth_interceptor.dart';
 
 final getIt = GetIt.instance;
 
 void setupDI() {
-  getIt.registerSingleton<FumospotsStorage>(FumospotsStorage());
+  // Basic Services
+
+  if (!getIt.isRegistered<FumospotsConfig>()) {
+    getIt.registerSingleton<FumospotsConfig>(FumospotsConfig.fromEnvironment);
+  }
+
+  if (!getIt.isRegistered<FumoStore>()) {
+    getIt.registerSingleton<FumoStore>(FumoStore());
+  }
+
+  if (!getIt.isRegistered<FumoClient>()) {
+    getIt.registerSingleton<FumoClient>(FumoClient());
+  }
+
+  // Auth
+
+  if (!getIt.isRegistered<AuthSessionStore>()) {
+    getIt.registerSingleton<AuthSessionStore>(
+      AuthSessionStore(store: getIt<FumoStore>()),
+    );
+  }
+
+  if (!getIt.isRegistered<AuthRepository>()) {
+    getIt.registerSingleton<AuthRepository>(
+      AuthRepository(
+        client: getIt<FumoClient>(),
+        sessions: getIt<AuthSessionStore>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<AuthController>()) {
+    getIt.registerSingleton<AuthController>(AuthController());
+  }
+
+  // Auth Interceptor Post Initialize
+
+  if (!getIt.isRegistered<FumoAuthInterceptor>()) {
+    final interceptor = FumoAuthInterceptor();
+    getIt.registerSingleton<FumoAuthInterceptor>(interceptor);
+    getIt<FumoClient>().postInitialize(interceptor);
+  }
 }

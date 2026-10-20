@@ -1,5 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
-import '../../utils/json_datetime_converter.dart';
+import '../../utils/json_converter.dart';
 part 'auth_model.g.dart';
 
 

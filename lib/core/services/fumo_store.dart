@@ -2,7 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:synchronized/synchronized.dart';
 
 // OpenCMS Inheritage
-class FumospotsStorage {
+class FumoStore {
   final _lock = Lock();
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
