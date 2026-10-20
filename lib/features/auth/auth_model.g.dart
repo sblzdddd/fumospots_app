@@ -60,14 +60,13 @@ Json? _$JsonConverterToJson<Json, Value>(
   Json? Function(Value value) toJson,
 ) => value == null ? null : toJson(value);
 
-CurrentViewer _$CurrentViewerFromJson(Map<String, dynamic> json) =>
-    CurrentViewer(
-      userId: json['userId'] as String,
-      email: json['email'] as String,
-      profile: AuthProfile.fromJson(json['profile'] as Map<String, dynamic>),
-    );
+CurrentUser _$CurrentUserFromJson(Map<String, dynamic> json) => CurrentUser(
+  userId: json['userId'] as String,
+  email: json['email'] as String,
+  profile: AuthProfile.fromJson(json['profile'] as Map<String, dynamic>),
+);
 
-Map<String, dynamic> _$CurrentViewerToJson(CurrentViewer instance) =>
+Map<String, dynamic> _$CurrentUserToJson(CurrentUser instance) =>
     <String, dynamic>{
       'userId': instance.userId,
       'email': instance.email,

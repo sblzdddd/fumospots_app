@@ -47,8 +47,8 @@ class AuthProfile {
 }
 
 @JsonSerializable(explicitToJson: true)
-class CurrentViewer {
-  const CurrentViewer({
+class CurrentUser {
+  const CurrentUser({
     required this.userId,
     required this.email,
     required this.profile,
@@ -58,8 +58,8 @@ class CurrentViewer {
   final String email;
   final AuthProfile profile;
 
-  factory CurrentViewer.fromJson(Map<String, dynamic> json) => _$CurrentViewerFromJson(json);
-  Map<String, dynamic> toJson() => _$CurrentViewerToJson(this);
+  factory CurrentUser.fromJson(Map<String, dynamic> json) => _$CurrentUserFromJson(json);
+  Map<String, dynamic> toJson() => _$CurrentUserToJson(this);
 }
 
 @JsonSerializable()
