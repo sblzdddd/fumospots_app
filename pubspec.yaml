@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   get_it: ^9.3.0
   maplibre: ^0.3.6
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:
