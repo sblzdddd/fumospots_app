@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/services/image_cache_service.dart';
 import 'theme_controller.dart';
@@ -19,6 +20,12 @@ class _SettingsViewState extends State<SettingsView> {
       GetIt.instance<VisualSettingsController>();
   final ImageCacheService _images = GetIt.instance<ImageCacheService>();
   bool _clearing = false;
+
+  static const _themeModes = [
+    ThemeMode.light,
+    ThemeMode.dark,
+    ThemeMode.system,
+  ];
 
   @override
   void initState() {
@@ -62,67 +69,143 @@ class _SettingsViewState extends State<SettingsView> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           const _SectionLabel('Appearance'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  label: Text('Light'),
-                  icon: FaIcon(FontAwesomeIcons.sun, size: 14),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  label: Text('Dark'),
-                  icon: FaIcon(FontAwesomeIcons.moon, size: 14),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  label: Text('System'),
-                  icon: FaIcon(FontAwesomeIcons.mobile, size: 14),
-                ),
-              ],
-              selected: {_theme.mode},
-              onSelectionChanged: (next) {
-                if (next.isNotEmpty) {
-                  _theme.setMode(next.first);
-                }
-              },
-            ),
+          M3EToggleButtonGroup(
+            type: M3EButtonGroupType.connected,
+            style: M3EButtonStyle.tonal,
+            shape: M3EButtonShape.round,
+            size: M3EButtonSize.sm,
+            selectedIndex: _themeModes.indexOf(_theme.mode),
+            onSelectedIndexChanged: (index) {
+              if (index != null) {
+                _theme.setMode(_themeModes[index]);
+              }
+            },
+            actions: const [
+              M3EToggleButtonGroupAction(
+                label: Text('Light'),
+                icon: FaIcon(FontAwesomeIcons.sun, size: 14),
+              ),
+              M3EToggleButtonGroupAction(
+                label: Text('Dark'),
+                icon: FaIcon(FontAwesomeIcons.moon, size: 14),
+              ),
+              M3EToggleButtonGroupAction(
+                label: Text('System'),
+                icon: FaIcon(FontAwesomeIcons.mobile, size: 14),
+              ),
+            ],
           ),
-          const Divider(height: 1),
+          const SizedBox(height: 8),
           const _SectionLabel('Visual'),
-          SwitchListTile(
-            secondary: const FaIcon(FontAwesomeIcons.droplet, size: 18),
-            title: const Text('Blur effects'),
-            subtitle: Text(
-              _visual.blurEnabled
-                  ? 'Progressive blur on the app bar'
-                  : 'Gradient fade only (no blur)',
-            ),
-            value: _visual.blurEnabled,
-            onChanged: _visual.setBlurEnabled,
+          M3ESegmentedColumn(
+            outerRadius: 20,
+            innerRadius: 8,
+            selectedRadius: 20,
+            pressedRadius: 8,
+            selectionMode: M3ESelectionMode.multiple,
+            selectionTrigger: M3ESelectionTrigger.none,
+            splashFactory: InkSparkle.splashFactory,
+            selectedColor: cs.primaryContainer.withValues(alpha: 0.4),
+            isSelected: (index) => index == 0 && _visual.blurEnabled,
+            onTap: (_) => _visual.setBlurEnabled(!_visual.blurEnabled),
+            children: [
+              Row(
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.droplet,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Blur effects',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _visual.blurEnabled
+                              ? 'Progressive blur on the app bar'
+                              : 'Gradient fade only (no blur)',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IgnorePointer(
+                    child: Switch(
+                      value: _visual.blurEnabled,
+                      onChanged: _visual.setBlurEnabled,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const Divider(height: 1),
+          const SizedBox(height: 8),
           const _SectionLabel('Storage'),
-          ListTile(
-            leading: const FaIcon(FontAwesomeIcons.broom, size: 18),
-            title: const Text('Clear image cache'),
-            subtitle: const Text('Free space and reset cached thumbnails'),
-            trailing: _clearing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : null,
-            onTap: _clearing ? null : _clearImageCache,
+          M3ESegmentedColumn(
+            outerRadius: 20,
+            innerRadius: 8,
+            pressedRadius: 8,
+            pressedScale: 0.98,
+            splashFactory: InkSparkle.splashFactory,
+            onTap: _clearing ? null : (_) => _clearImageCache(),
+            children: [
+              Row(
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.broom,
+                    size: 18,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Clear image cache',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Free space and reset cached thumbnails',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_clearing)
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: M3ELoadingIndicator(
+                        constraints: BoxConstraints.tightFor(
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -138,7 +221,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
