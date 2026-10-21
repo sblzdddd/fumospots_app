@@ -1,4 +1,4 @@
-import 'package:get_it/get_it.dart';
+﻿import 'package:get_it/get_it.dart';
 
 import '../../features/auth/auth_controller.dart';
 import '../../features/auth/auth_repository.dart';
@@ -9,6 +9,7 @@ import '../../features/post/post_repository.dart';
 import '../config/fumospots_config.dart';
 import '../services/fumo_client.dart';
 import '../services/fumo_store.dart';
+import '../services/image_cache_service.dart';
 import '../services/interceptors/fumo_auth_interceptor.dart';
 
 final getIt = GetIt.instance;
@@ -26,6 +27,10 @@ void setupDI() {
 
   if (!getIt.isRegistered<FumoClient>()) {
     getIt.registerSingleton<FumoClient>(FumoClient());
+  }
+
+  if (!getIt.isRegistered<ImageCacheService>()) {
+    getIt.registerLazySingleton<ImageCacheService>(ImageCacheService.new);
   }
 
   // Auth
