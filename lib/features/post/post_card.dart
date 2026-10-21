@@ -1,20 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get_it/get_it.dart';
 
+import '../../core/services/image_cache_service.dart';
+import '../../core/services/image_ratio.dart';
 import 'post_model.dart';
-
-const _estimatedAspects = [0.75, 1.0, 1.25, 1.5];
-
-double _estimateAspect(int id) {
-  return _estimatedAspects[id.abs() % _estimatedAspects.length];
-}
-
-double _clampAspect(double aspect) {
-  if (!aspect.isFinite || aspect <= 0) {
-    return 1;
-  }
-  return aspect.clamp(0.7, 1.6);
-}
 
 class PostCard extends StatefulWidget {
   const PostCard({super.key, required this.post, required this.onPress});
@@ -27,16 +18,17 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
-  late double _aspect = _estimateAspect(widget.post.id);
+  final ImageCacheService _images = GetIt.instance<ImageCacheService>();
+
+  late double _aspect;
   bool _loaded = false;
   bool _failed = false;
-  ImageStream? _stream;
-  ImageStreamListener? _listener;
+  ImageRatioResolver? _resolver;
 
   @override
   void initState() {
     super.initState();
-    _listenForSize(widget.post.thumbUrl);
+    _bindAspect();
   }
 
   @override
@@ -44,48 +36,53 @@ class _PostCardState extends State<PostCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.post.id != widget.post.id ||
         oldWidget.post.thumbUrl != widget.post.thumbUrl) {
-      _aspect = _estimateAspect(widget.post.id);
-      _loaded = false;
       _failed = false;
-      _listenForSize(widget.post.thumbUrl);
+      _bindAspect();
     }
+  }
+
+  void _bindAspect() {
+    final url = widget.post.thumbUrl;
+    _aspect = _images.aspectOf(
+      postId: widget.post.id,
+      url: url,
+      fallback: estimateAspect(widget.post.id),
+    );
+    _loaded = _images.hasAspect(postId: widget.post.id, url: url);
+    _listenForSize(url);
   }
 
   @override
   void dispose() {
-    _clearListener();
+    _resolver?.dispose();
     super.dispose();
   }
 
   void _listenForSize(String? url) {
-    _clearListener();
+    _resolver?.dispose();
+    _resolver = null;
     if (url == null) {
       return;
     }
-    final stream = NetworkImage(url).resolve(const ImageConfiguration());
-    final listener = ImageStreamListener(
-      (info, _) {
-        final width = info.image.width.toDouble();
-        final height = info.image.height.toDouble();
-        if (width > 0 && height > 0 && mounted) {
-          setState(() => _aspect = _clampAspect(height / width));
+
+    _resolver = _images.resolveAspect(
+      url: url,
+      postId: widget.post.id,
+      onRatio: (ratio) {
+        if (!mounted || (_aspect == ratio && _loaded)) {
+          return;
+        }
+        setState(() {
+          _aspect = ratio;
+          _loaded = true;
+        });
+      },
+      onError: () {
+        if (mounted && !_failed) {
+          setState(() => _failed = true);
         }
       },
-      onError: (_, _) {},
     );
-    stream.addListener(listener);
-    _stream = stream;
-    _listener = listener;
-  }
-
-  void _clearListener() {
-    final stream = _stream;
-    final listener = _listener;
-    if (stream != null && listener != null) {
-      stream.removeListener(listener);
-    }
-    _stream = null;
-    _listener = null;
   }
 
   @override
@@ -94,93 +91,87 @@ class _PostCardState extends State<PostCard> {
     final showImage = widget.post.thumbUrl != null && !_failed;
 
     return Material(
-      color: colors.surfaceContainerHighest,
+      color: colors.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: widget.onPress,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AspectRatio(
-              aspectRatio: 1 / _aspect,
-              child: ColoredBox(
-                color: colors.outlineVariant,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (showImage)
-                      Image.network(
-                        widget.post.thumbUrl!,
-                        fit: BoxFit.cover,
-                        opacity: AlwaysStoppedAnimation(_loaded ? 1 : 0),
-                        errorBuilder: (_, _, _) {
-                          if (!_failed) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                setState(() => _failed = true);
-                              }
-                            });
-                          }
-                          return const SizedBox.shrink();
-                        },
-                        frameBuilder:
-                            (context, child, frame, wasSynchronouslyLoaded) {
-                              if (!_loaded &&
-                                  (frame != null || wasSynchronouslyLoaded)) {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) {
-                                    setState(() => _loaded = true);
-                                  }
-                                });
-                              }
-                              return child;
-                            },
-                      ),
-                    if (!_loaded || !showImage)
-                      Center(
-                        child: _failed || widget.post.thumbUrl == null
-                            ? FaIcon(
-                                FontAwesomeIcons.image,
-                                size: 22,
-                                color: colors.onSurfaceVariant,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                  ],
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AspectRatio(
+                aspectRatio: 1 / _aspect,
+                child: ColoredBox(
+                  color: colors.outlineVariant,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (showImage)
+                        CachedNetworkImage(
+                          imageUrl: widget.post.thumbUrl!,
+                          cacheManager: _images.cacheManager,
+                          fit: BoxFit.cover,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
+                          placeholder: (_, _) => const SizedBox.shrink(),
+                          errorWidget: (_, _, _) => Center(
+                            child: FaIcon(
+                              FontAwesomeIcons.image,
+                              size: 22,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      if (!showImage)
+                        Center(
+                          child: FaIcon(
+                            FontAwesomeIcons.image,
+                            size: 22,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-              child: Text(
-                widget.post.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  height: 1.25,
-                  fontWeight: FontWeight.w500,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Text(
+                  widget.post.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.25,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: Text(
-                widget.post.placeName ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 12,
-                  color: colors.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: Text(
+                  widget.post.placeName ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w300,
+                  ),
                 ),
               ),
+            ],
+          ),
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onPress,
+                child: const SizedBox.expand(),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

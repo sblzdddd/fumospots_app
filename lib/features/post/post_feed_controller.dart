@@ -25,6 +25,10 @@ class PostFeedController extends ChangeNotifier {
   bool _loadingMore = false;
   bool _freshLoad = false;
   bool _disposed = false;
+  Future<void>? _freshInFlight;
+
+  /// True while a fresh load is in progress with no posts to show.
+  bool get showingSkeletons => loading && posts.isEmpty && error == null;
 
   Future<void> load({PostSortOrder? sort}) {
     if (sort != null) {
@@ -32,6 +36,8 @@ class PostFeedController extends ChangeNotifier {
     }
     return _load(append: false);
   }
+
+  Future<void> refresh() => _load(append: false);
 
   Future<void> loadMore() => _load(append: true);
 
@@ -46,19 +52,41 @@ class PostFeedController extends ChangeNotifier {
       loadingMore = true;
       loadMoreError = null;
       _notify();
-    } else {
-      _generation += 1;
-      _freshLoad = true;
-      _loadingMore = false;
-      _nextOffset = 0;
-      loading = true;
-      loadingMore = false;
-      error = null;
-      loadMoreError = null;
-      _notify();
+      await _fetch(append: true, request: _generation);
+      return;
     }
 
+    final existing = _freshInFlight;
+    if (existing != null) {
+      return existing;
+    }
+
+    _generation += 1;
+    _freshLoad = true;
+    _loadingMore = false;
+    _nextOffset = 0;
+    posts = const [];
+    postCount = 0;
+    hasMore = true;
+    loading = true;
+    loadingMore = false;
+    error = null;
+    loadMoreError = null;
+    _notify();
+
     final request = _generation;
+    final future = _fetch(append: false, request: request);
+    _freshInFlight = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_freshInFlight, future)) {
+        _freshInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _fetch({required bool append, required int request}) async {
     final offset = append ? _nextOffset : 0;
 
     try {

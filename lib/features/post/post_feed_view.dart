@@ -22,6 +22,11 @@ class PostFeedView extends StatefulWidget {
 class _PostFeedViewState extends State<PostFeedView> {
   final PostFeedController _controller = GetIt.instance<PostFeedController>();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<RefreshIndicatorState> _refreshKey =
+      GlobalKey<RefreshIndicatorState>();
+
+  bool _indicatorArmed = false;
+  bool _refreshFromIndicator = false;
 
   @override
   void initState() {
@@ -39,6 +44,18 @@ class _PostFeedViewState extends State<PostFeedView> {
   }
 
   void _onChanged() {
+    if (_controller.showingSkeletons) {
+      if (_scrollController.hasClients && _scrollController.offset > 0) {
+        _scrollController.jumpTo(0);
+      }
+      if (!_indicatorArmed && !_refreshFromIndicator) {
+        _indicatorArmed = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await _refreshKey.currentState?.show();
+          _indicatorArmed = false;
+        });
+      }
+    }
     if (mounted) {
       setState(() {});
     }
@@ -54,85 +71,113 @@ class _PostFeedViewState extends State<PostFeedView> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    _refreshFromIndicator = true;
+    try {
+      await _controller.refresh();
+    } finally {
+      _refreshFromIndicator = false;
+    }
+  }
+
   int _columnCount(double width) => width >= 840 ? 3 : 2;
 
   @override
   Widget build(BuildContext context) {
     final feed = _controller;
-    final loadingFirst = feed.loading && feed.posts.isEmpty && feed.error == null;
+    final loadingFirst = feed.showingSkeletons;
     final width = MediaQuery.sizeOf(context).width;
     final columns = _columnCount(width);
     final bottomInset = MediaQuery.paddingOf(context).bottom + 88;
 
     if (feed.error != null && feed.posts.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.only(top: widget.contentInsetTop),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  feed.error!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
+      return RefreshIndicator(
+        key: _refreshKey,
+        onRefresh: _onRefresh,
+        displacement: widget.contentInsetTop + 24,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.only(top: widget.contentInsetTop),
+          children: [
+            SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.5,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        feed.error!,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: feed.retry,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: feed.retry,
-                  child: const Text('Retry'),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       );
     }
 
     final itemCount = loadingFirst ? 6 : feed.posts.length;
 
-    return MasonryGridView.count(
-      controller: _scrollController,
-      crossAxisCount: columns,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 8,
-      padding: EdgeInsets.fromLTRB(
-        8,
-        widget.contentInsetTop + 16,
-        8,
-        bottomInset,
-      ),
-      itemCount: itemCount == 0 ? 1 : itemCount,
-      itemBuilder: (context, index) {
-        if (!loadingFirst && feed.posts.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            child: Text(
-              'No posts yet.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return RefreshIndicator(
+      key: _refreshKey,
+      onRefresh: _onRefresh,
+      displacement: widget.contentInsetTop + 24,
+      child: MasonryGridView.count(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        crossAxisCount: columns,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 8,
+        padding: EdgeInsets.fromLTRB(
+          8,
+          widget.contentInsetTop + 16,
+          8,
+          bottomInset,
+        ),
+        itemCount: itemCount == 0 ? 1 : itemCount,
+        itemBuilder: (context, index) {
+          if (!loadingFirst && feed.posts.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Text(
+                'No posts yet.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            );
+          }
+
+          if (loadingFirst) {
+            final aspects = [0.8, 1.25, 1.0, 1.5, 0.9, 1.35];
+            return _SkeletonCard(aspect: aspects[index % aspects.length]);
+          }
+
+          final post = feed.posts[index];
+          return PostCard(
+            post: post,
+            onPress: () => widget.onOpenPost(post.id),
           );
-        }
-
-        if (loadingFirst) {
-          final aspects = [0.8, 1.25, 1.0, 1.5, 0.9, 1.35];
-          return _SkeletonCard(aspect: aspects[index % aspects.length]);
-        }
-
-        final post = feed.posts[index];
-        return PostCard(
-          post: post,
-          onPress: () => widget.onOpenPost(post.id),
-        );
-      },
-      footer: _FeedFooter(
-        loading: feed.loadingMore,
-        error: feed.loadMoreError,
-        onRetry: feed.loadMore,
+        },
+        footer: loadingFirst
+            ? null
+            : _FeedFooter(
+                loading: feed.loadingMore,
+                error: feed.loadMoreError,
+                onRetry: feed.loadMore,
+              ),
       ),
     );
   }
