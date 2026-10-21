@@ -2,7 +2,7 @@ import '../../core/services/fumo_store.dart';
 import 'auth_model.dart';
 
 class AuthSessionStore {
-  AuthSessionStore({required FumoStore store}) : _store = store;
+  AuthSessionStore({required this._store});
 
   static const accessTokenKey = 'access_token';
   static const refreshTokenKey = 'refresh_token';

@@ -8,9 +8,7 @@ import 'auth_model.dart';
 import 'auth_session_store.dart';
 
 class AuthRepository {
-  AuthRepository({required FumoClient client, required AuthSessionStore sessions})
-    : _client = client,
-      _sessions = sessions;
+  AuthRepository({required this._client, required this._sessions});
 
   final FumoClient _client;
   final AuthSessionStore _sessions;

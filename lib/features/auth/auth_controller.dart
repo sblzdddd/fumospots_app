@@ -7,10 +7,6 @@ import 'auth_model.dart';
 import 'auth_repository.dart';
 
 class AuthController extends ChangeNotifier {
-  // AuthController({required this._repository});
-
-  static const _refreshSkewSeconds = 60;
-
   final AuthRepository _repository = GetIt.instance<AuthRepository>();
 
   AuthSession? session;
@@ -38,7 +34,7 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> sendEmailLogin({required String email}) async {
-    final normalizedEmail = _requiredEmail(email);
+    final normalizedEmail = _normalizeEmail(email);
     await _run(() => _repository.sendEmailLogin(email: normalizedEmail));
   }
 
@@ -46,7 +42,7 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String token,
   }) async {
-    final normalizedEmail = _requiredEmail(email);
+    final normalizedEmail = _normalizeEmail(email);
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) {
       throw const AuthException('Email verification code is required.');
@@ -64,7 +60,7 @@ class AuthController extends ChangeNotifier {
     });
   }
 
-  String _requiredEmail(String email) {
+  String _normalizeEmail(String email) {
     final normalizedEmail = email.trim();
     if (normalizedEmail.isEmpty) {
       throw const AuthException('Email is required.');
@@ -120,7 +116,7 @@ class AuthController extends ChangeNotifier {
   Future<void> _applySession(AuthSession nextSession) async {
     final revision = ++_revision;
     var current = nextSession;
-    if (_expiresSoon(current)) {
+    if (current.expiresAt - DateTime.now().millisecondsSinceEpoch ~/ 1000 <= 30) {
       current = await _repository.refreshSession(current.refreshToken);
     }
     if (revision != _revision) {
@@ -161,11 +157,6 @@ class AuthController extends ChangeNotifier {
       ready = true;
       _notify();
     }
-  }
-
-  bool _expiresSoon(AuthSession value) {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    return value.expiresAt - now <= _refreshSkewSeconds;
   }
 
   void _notify() {
