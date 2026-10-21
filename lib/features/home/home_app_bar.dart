@@ -1,7 +1,6 @@
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:progressive_blur/progressive_blur.dart';
 
 import '../settings/settings_view.dart';
 import '../settings/visual_settings_controller.dart';
@@ -45,44 +44,31 @@ class HomeAppBar extends StatelessWidget {
               0.2,
             );
             final surface = Theme.of(context).colorScheme.surface;
+            final showGradient =
+                !visual.blurEnabled ||
+                (selectedIndex == 0 && homeView == HomeView.map);
 
             return Stack(
               children: [
-                Positioned.fill(
-                  child: visual.blurEnabled
-                      ? ProgressiveBlurWidget(
-                          sigma: 32.0,
-                          tintColor: surface.withValues(alpha: 0.8),
-                          linearGradientBlur: LinearGradientBlur(
-                            values: const [1, 0],
-                            stops: [0, fadeStop],
-                            start: Alignment.topCenter,
+                Positioned.fill(child: child),
+                if (showGradient)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
+                            colors: [
+                              surface.withValues(alpha: 0.92),
+                              surface.withValues(alpha: 0.0),
+                            ],
+                            stops: [0, fadeStop.clamp(0.05, 0.25)],
                           ),
-                          child: child,
-                        )
-                      : Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            child,
-                            IgnorePointer(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      surface.withValues(alpha: 0.92),
-                                      surface.withValues(alpha: 0.0),
-                                    ],
-                                    stops: [0, fadeStop.clamp(0.05, 0.25)],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
-                ),
+                      ),
+                    ),
+                  ),
                 Positioned(
                   top: 0,
                   left: 0,
