@@ -106,11 +106,14 @@ class _MainScreenState extends State<MainScreen> {
                       onOpenPost: _openPost,
                     ),
                   ),
-                  SpotMapView(
-                    contentInsetTop: headerHeight,
-                    selectedPostId: _selectedPostId,
-                    onOpenPost: _openPost,
-                  ),
+                  if (_homeView == HomeView.map)
+                    SpotMapView(
+                      contentInsetTop: headerHeight,
+                      selectedPostId: _selectedPostId,
+                      onOpenPost: _openPost,
+                    )
+                  else
+                    const SizedBox.expand(),
                 ],
               )
             : _blurBehindHeader(

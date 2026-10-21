@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
@@ -40,6 +41,13 @@ class _SpotMapViewState extends State<SpotMapView> {
   Size _mapSize = Size.zero;
   List<Feature<Point>> _circleFeatures = const [];
   MapPalette _palette = MapPalette.light;
+  bool _mapSurfaceReady = false;
+  bool _styleReady = false;
+  int _mapAttempt = 0;
+  Timer? _styleRecovery;
+
+  bool get _recoverBlankIosMap =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -47,13 +55,33 @@ class _SpotMapViewState extends State<SpotMapView> {
     _points.addListener(_onPointsChanged);
     _circleFeatures = mapPointFeatures(_points.points);
     _points.load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _mapSurfaceReady = true);
+    });
   }
 
   @override
   void dispose() {
+    _styleRecovery?.cancel();
     _points.removeListener(_onPointsChanged);
     _previews.dispose();
     super.dispose();
+  }
+
+  void _armStyleRecovery() {
+    _styleRecovery?.cancel();
+    if (!_recoverBlankIosMap) {
+      return;
+    }
+    _styleRecovery = Timer(const Duration(milliseconds: 1200), () {
+      if (!mounted || _styleReady || _mapAttempt >= 1) {
+        return;
+      }
+      setState(() => _mapAttempt++);
+    });
   }
 
   void _onPointsChanged() {
@@ -66,6 +94,8 @@ class _SpotMapViewState extends State<SpotMapView> {
   }
 
   Future<void> _onStyleLoaded(StyleController style) async {
+    _styleReady = true;
+    _styleRecovery?.cancel();
     await _previews.attach(
       style,
       palette: _palette,
@@ -173,7 +203,9 @@ class _SpotMapViewState extends State<SpotMapView> {
         LayoutBuilder(
           builder: (context, constraints) {
             final nextSize = Size(constraints.maxWidth, constraints.maxHeight);
-            if (nextSize != _mapSize) {
+            if (nextSize != _mapSize &&
+                nextSize.width > 0 &&
+                nextSize.height > 0) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) {
                   return;
@@ -183,8 +215,15 @@ class _SpotMapViewState extends State<SpotMapView> {
               });
             }
 
+            if (!_mapSurfaceReady ||
+                nextSize.width <= 0 ||
+                nextSize.height <= 0) {
+              return const SizedBox.expand();
+            }
+
+            final attempt = _mapAttempt;
             return MapLibreMap(
-              key: ValueKey(styleUrl),
+              key: ValueKey('$styleUrl#$attempt'),
               options: MapOptions(
                 initStyle: styleUrl,
                 initCenter: const Geographic(
@@ -197,10 +236,20 @@ class _SpotMapViewState extends State<SpotMapView> {
                 androidTextureMode: true,
               ),
               onMapCreated: (controller) {
+                if (!mounted || attempt != _mapAttempt) {
+                  return;
+                }
                 _map = controller;
                 _locate.reset();
+                _styleReady = false;
+                _armStyleRecovery();
               },
-              onStyleLoaded: _onStyleLoaded,
+              onStyleLoaded: (style) {
+                if (!mounted || attempt != _mapAttempt) {
+                  return;
+                }
+                unawaited(_onStyleLoaded(style));
+              },
               onEvent: _handleEvent,
               layers: [
                 CircleLayer(
