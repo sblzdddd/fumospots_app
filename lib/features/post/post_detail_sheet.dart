@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../map/map_preview_controller.dart';
 import 'post_detail_body.dart';
@@ -15,11 +16,28 @@ Future<void> showPostDetailSheet(BuildContext context, int postId) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    showDragHandle: true,
-    builder: (context) => PostDetailSheet(
-      postId: postId,
-      previewThumbUrl: previewThumbUrl,
-    ),
+    enableDrag: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.6,
+        maxChildSize: 0.92,
+        shouldCloseOnMinExtent: true,
+        builder: (context, scrollController) {
+          return M3EBottomSheet(
+            showDragHandle: true,
+            padding: EdgeInsets.zero,
+            child: PostDetailSheet(
+              postId: postId,
+              previewThumbUrl: previewThumbUrl,
+              scrollController: scrollController,
+            ),
+          );
+        },
+      );
+    },
   );
 }
 
@@ -27,11 +45,14 @@ Future<void> showPostDetailSheet(BuildContext context, int postId) {
 String? resolvePostPreviewThumb(int postId) {
   final feed = GetIt.instance<PostFeedController>();
   for (final post in feed.posts) {
-    if (post.id == postId && post.thumbUrl != null && post.thumbUrl!.isNotEmpty) {
+    if (post.id == postId &&
+        post.thumbUrl != null &&
+        post.thumbUrl!.isNotEmpty) {
       return post.thumbUrl;
     }
   }
-  final mapThumb = GetIt.instance<MapPreviewController>().peek(postId)?.thumbUrl;
+  final mapThumb =
+      GetIt.instance<MapPreviewController>().peek(postId)?.thumbUrl;
   if (mapThumb != null && mapThumb.isNotEmpty) {
     return mapThumb;
   }
@@ -43,10 +64,12 @@ class PostDetailSheet extends StatefulWidget {
     super.key,
     required this.postId,
     this.previewThumbUrl,
+    this.scrollController,
   });
 
   final int postId;
   final String? previewThumbUrl;
+  final ScrollController? scrollController;
 
   @override
   State<PostDetailSheet> createState() => _PostDetailSheetState();
@@ -79,10 +102,6 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final sheetHeight = (media.size.height * 0.75).clamp(
-      320.0,
-      media.size.height,
-    );
     final List<PostPhoto> photos = _controller.detail == null
         ? const []
         : displayPhotos(_controller.detail!);
@@ -94,56 +113,56 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
     final showLoadingHero =
         _controller.loading && previewThumb != null && photos.isEmpty;
 
-    return SizedBox(
-      height: sheetHeight,
-      child: ListView(
-        children: [
-          if (showLoadingHero)
-            PostLoadingThumbHero(
-              postId: widget.postId,
-              thumbUrl: previewThumb,
-              maxHeight: maxHeroHeight,
-            ),
-          if (_controller.loading)
-            _DetailSkeleton(includePhotoPlaceholder: !showLoadingHero),
-          if (photos.isNotEmpty && !_controller.loading)
-            PostPhotos(
-              postId: widget.postId,
-              photos: photos,
-              maxHeight: maxHeroHeight,
-              index: photoIndex,
-              onIndex: _controller.setPhotoIndex,
-            ),
-          if (_controller.error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
-              child: Column(
-                children: [
-                  Text(
-                    'Post unavailable',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+    // Same list content as before — only the controller is wired so the sheet
+    // can take over the drag when the list is at the top.
+    return ListView(
+      controller: widget.scrollController,
+      children: [
+        if (showLoadingHero)
+          PostLoadingThumbHero(
+            postId: widget.postId,
+            thumbUrl: previewThumb,
+            maxHeight: maxHeroHeight,
+          ),
+        if (_controller.loading)
+          _DetailSkeleton(includePhotoPlaceholder: !showLoadingHero),
+        if (photos.isNotEmpty && !_controller.loading)
+          PostPhotos(
+            postId: widget.postId,
+            photos: photos,
+            maxHeight: maxHeroHeight,
+            index: photoIndex,
+            onIndex: _controller.setPhotoIndex,
+          ),
+        if (_controller.error != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+            child: Column(
+              children: [
+                Text(
+                  'Post unavailable',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _controller.error!,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _controller.error!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          if (_controller.detail != null)
-            PostDetailBody(
-              detail: _controller.detail!,
-              locale: deviceLocale(),
-            ),
-          const SizedBox(height: 48),
-        ],
-      ),
+          ),
+        if (_controller.detail != null)
+          PostDetailBody(
+            detail: _controller.detail!,
+            locale: deviceLocale(),
+          ),
+        const SizedBox(height: 48),
+      ],
     );
   }
 }
