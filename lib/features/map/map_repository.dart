@@ -4,7 +4,7 @@ import '../../utils/json_converter.dart';
 import 'map_model.dart';
 
 class MapRepository {
-  MapRepository({required FumoClient client}) : _client = client;
+  MapRepository({required this._client});
 
   final FumoClient _client;
 
@@ -15,7 +15,7 @@ class MapRepository {
       '/api/map/posts',
       queryParameters: {
         'afterId': afterId,
-        if (throughId != null) 'throughId': throughId,
+        'throughId': ?throughId,
       },
       fallback: "Couldn't load map spots.",
     );
@@ -39,7 +39,7 @@ class MapRepository {
     }
     return [
       for (final raw in items)
-        if (_previewFromJson(raw) case final item?) item,
+        ?_previewFromJson(raw),
     ];
   }
 

@@ -3,7 +3,7 @@ import '../../utils/json_converter.dart';
 import 'post_model.dart';
 
 class PostRepository {
-  PostRepository({required FumoClient client}) : _client = client;
+  PostRepository({required this._client});
 
   static const _pageSize = 24;
 
