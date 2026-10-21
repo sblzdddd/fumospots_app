@@ -64,14 +64,17 @@ class PostFeedController extends ChangeNotifier {
     _generation += 1;
     _freshLoad = true;
     _loadingMore = false;
-    _nextOffset = 0;
-    posts = const [];
-    postCount = 0;
-    hasMore = true;
     loading = true;
     loadingMore = false;
     error = null;
     loadMoreError = null;
+    // Keep the current list up while a refresh is in flight. Clearing it
+    // rebuilds the whole grid and leaves the feed blank until the request ends.
+    if (posts.isEmpty) {
+      _nextOffset = 0;
+      postCount = 0;
+      hasMore = true;
+    }
     _notify();
 
     final request = _generation;
