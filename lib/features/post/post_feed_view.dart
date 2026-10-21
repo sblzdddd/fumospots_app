@@ -92,11 +92,14 @@ class _PostFeedViewState extends State<PostFeedView> {
       edgeOffset: inset,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return Transform.translate(
-            offset: Offset(0, -inset),
-            child: SizedBox(
-              height: constraints.maxHeight + inset,
-              child: child,
+          final height = constraints.maxHeight + inset;
+          return OverflowBox(
+            alignment: Alignment.topCenter,
+            minHeight: height,
+            maxHeight: height,
+            child: Transform.translate(
+              offset: Offset(0, -inset),
+              child: SizedBox(height: height, child: child),
             ),
           );
         },
