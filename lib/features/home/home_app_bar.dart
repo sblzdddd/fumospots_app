@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:progressive_blur/progressive_blur.dart';
 
-import '../post/post_feed_controller.dart';
-import '../post/post_model.dart';
 import '../settings/settings_view.dart';
 import '../settings/visual_settings_controller.dart';
 import 'brand_logo.dart';
 import 'home_view.dart';
+import 'view_settings_sheet.dart';
 
 class HomeAppBar extends StatelessWidget {
   const HomeAppBar({
@@ -119,88 +118,31 @@ class _HomeToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final feed = GetIt.instance<PostFeedController>();
-
-    return ListenableBuilder(
-      listenable: feed,
-      builder: (context, _) {
-        return Row(
-          children: [
-            const Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FumospotsBrandLogo(height: 40),
-                ),
-              ),
+    return Row(
+      children: [
+        const Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FumospotsBrandLogo(height: 40),
             ),
-            PopupMenuButton<_HomeMenuAction>(
-              icon: const FaIcon(FontAwesomeIcons.bars, size: 20),
-              clipBehavior: Clip.antiAlias,
-              onSelected: (action) {
-                switch (action) {
-                  case _HomeMenuAction.newest:
-                    feed.load(sort: PostSortOrder.desc);
-                  case _HomeMenuAction.oldest:
-                    feed.load(sort: PostSortOrder.asc);
-                  case _HomeMenuAction.waterfall:
-                    onHomeViewChange(HomeView.waterfall);
-                  case _HomeMenuAction.map:
-                    onHomeViewChange(HomeView.map);
-                }
-              },
-              itemBuilder: (context) => [
-                CheckedPopupMenuItem(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 2,
-                    bottom: 1,
-                  ),
-                  value: _HomeMenuAction.newest,
-                  checked: feed.sortOrder == PostSortOrder.desc,
-                  child: const Text('Newest'),
-                ),
-                CheckedPopupMenuItem(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 1,
-                    bottom: 0,
-                  ),
-                  value: _HomeMenuAction.oldest,
-                  checked: feed.sortOrder == PostSortOrder.asc,
-                  child: const Text('Oldest'),
-                ),
-                const PopupMenuDivider(),
-                CheckedPopupMenuItem(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 0,
-                    bottom: 1,
-                  ),
-                  value: _HomeMenuAction.waterfall,
-                  checked: homeView == HomeView.waterfall,
-                  child: const Text('Waterfall'),
-                ),
-                CheckedPopupMenuItem(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 1,
-                    bottom: 2,
-                  ),
-                  value: _HomeMenuAction.map,
-                  checked: homeView == HomeView.map,
-                  child: const Text('Map'),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+        IconButton(
+          tooltip: 'View settings',
+          onPressed: () => showViewSettingsSheet(
+            context,
+            homeView: homeView,
+            onHomeViewChange: onHomeViewChange,
+          ),
+          icon: FaIcon(
+            FontAwesomeIcons.bars,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -237,5 +179,3 @@ class _ProfileToolbar extends StatelessWidget {
     );
   }
 }
-
-enum _HomeMenuAction { newest, oldest, waterfall, map }
