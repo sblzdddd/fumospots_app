@@ -110,7 +110,7 @@ class _PostFeedViewState extends State<PostFeedView> {
     final loadingFirst = feed.showingSkeletons;
     final width = MediaQuery.sizeOf(context).width;
     final columns = _columnCount(width);
-    final bottomInset = MediaQuery.paddingOf(context).bottom + 88;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     if (feed.error != null && feed.posts.isEmpty) {
       return _wrapRefresh(

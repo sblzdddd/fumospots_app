@@ -165,7 +165,7 @@ class _SpotMapViewState extends State<SpotMapView> {
     _palette = MapPalette.of(brightness);
     final styleUrl = hostedMapStyleUrl(dark: brightness == Brightness.dark);
     final selectedId = widget.selectedPostId;
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 88;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return Stack(
       fit: StackFit.expand,

@@ -12,7 +12,7 @@ class UserView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = GetIt.instance<AuthController>();
-    final bottomInset = MediaQuery.paddingOf(context).bottom + 88;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return ListenableBuilder(
       listenable: auth,
