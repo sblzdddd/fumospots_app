@@ -1,7 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/services/image_cache_service.dart';
 import '../../core/services/image_ratio.dart';
@@ -90,84 +91,80 @@ class _PostCardState extends State<PostCard> {
     final colors = Theme.of(context).colorScheme;
     final showImage = widget.post.thumbUrl != null && !_failed;
 
-    return Material(
+    return M3ESegmentedItem(
+      index: 0,
+      position: M3ESegmentedItemPosition.single,
+      outerRadius: 16,
+      innerRadius: 16,
+      gap: 0,
       color: colors.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
+      padding: EdgeInsets.zero,
+      pressedScale: 0.97,
+      pressedRadius: 12,
+      splashFactory: InkSparkle.splashFactory,
+      onTap: (_) => widget.onPress(),
+      semanticLabel: widget.post.title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AspectRatio(
-                aspectRatio: 1 / _aspect,
-                child: ColoredBox(
-                  color: colors.outlineVariant,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (showImage)
-                        CachedNetworkImage(
-                          imageUrl: widget.post.thumbUrl!,
-                          cacheManager: _images.cacheManager,
-                          fit: BoxFit.cover,
-                          fadeInDuration: Duration.zero,
-                          fadeOutDuration: Duration.zero,
-                          placeholder: (_, _) => const SizedBox.shrink(),
-                          errorWidget: (_, _, _) => Center(
-                            child: FaIcon(
-                              FontAwesomeIcons.image,
-                              size: 22,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
+          AspectRatio(
+            aspectRatio: 1 / _aspect,
+            child: ColoredBox(
+              color: colors.outlineVariant,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (showImage)
+                    CachedNetworkImage(
+                      imageUrl: widget.post.thumbUrl!,
+                      cacheManager: _images.cacheManager,
+                      fit: BoxFit.cover,
+                      fadeInDuration: Duration.zero,
+                      fadeOutDuration: Duration.zero,
+                      placeholder: (_, _) => const SizedBox.shrink(),
+                      errorWidget: (_, _, _) => Center(
+                        child: FaIcon(
+                          FontAwesomeIcons.image,
+                          size: 22,
+                          color: colors.onSurfaceVariant,
                         ),
-                      if (!showImage)
-                        Center(
-                          child: FaIcon(
-                            FontAwesomeIcons.image,
-                            size: 22,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                      ),
+                    ),
+                  if (!showImage)
+                    Center(
+                      child: FaIcon(
+                        FontAwesomeIcons.image,
+                        size: 22,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                child: Text(
-                  widget.post.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: Text(
-                  widget.post.placeName ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    color: colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          Positioned.fill(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onPress,
-                child: const SizedBox.expand(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            child: Text(
+              widget.post.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 14,
+                height: 1.25,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Text(
+              widget.post.placeName ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w300,
               ),
             ),
           ),

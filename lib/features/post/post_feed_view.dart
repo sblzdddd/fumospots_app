@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid/flutter_staggered_grid.dart';
 import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'post_card.dart';
 import 'post_feed_controller.dart';
@@ -22,8 +23,8 @@ class PostFeedView extends StatefulWidget {
 class _PostFeedViewState extends State<PostFeedView> {
   final PostFeedController _controller = GetIt.instance<PostFeedController>();
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey<RefreshIndicatorState> _refreshKey =
-      GlobalKey<RefreshIndicatorState>();
+  final M3EPullToRefreshController _refreshController =
+      M3EPullToRefreshController();
 
   bool _indicatorArmed = false;
   bool _refreshFromIndicator = false;
@@ -40,6 +41,7 @@ class _PostFeedViewState extends State<PostFeedView> {
   void dispose() {
     _controller.removeListener(_onChanged);
     _scrollController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -51,7 +53,7 @@ class _PostFeedViewState extends State<PostFeedView> {
       if (!_indicatorArmed && !_refreshFromIndicator) {
         _indicatorArmed = true;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await _refreshKey.currentState?.show();
+          await _refreshController.refresh();
           _indicatorArmed = false;
         });
       }
@@ -82,6 +84,26 @@ class _PostFeedViewState extends State<PostFeedView> {
 
   int _columnCount(double width) => width >= 840 ? 3 : 2;
 
+  Widget _wrapRefresh({required Widget child}) {
+    final inset = widget.contentInsetTop;
+    return M3EPullToRefreshIndicator(
+      controller: _refreshController,
+      onRefresh: _onRefresh,
+      edgeOffset: inset,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Transform.translate(
+            offset: Offset(0, -inset),
+            child: SizedBox(
+              height: constraints.maxHeight + inset,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final feed = _controller;
@@ -91,10 +113,7 @@ class _PostFeedViewState extends State<PostFeedView> {
     final bottomInset = MediaQuery.paddingOf(context).bottom + 88;
 
     if (feed.error != null && feed.posts.isEmpty) {
-      return RefreshIndicator(
-        key: _refreshKey,
-        onRefresh: _onRefresh,
-        displacement: widget.contentInsetTop + 24,
+      return _wrapRefresh(
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.only(top: widget.contentInsetTop),
@@ -113,8 +132,10 @@ class _PostFeedViewState extends State<PostFeedView> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 12),
-                      FilledButton(
+                      M3EButton(
                         onPressed: feed.retry,
+                        style: M3EButtonStyle.filled,
+                        shape: M3EButtonShape.round,
                         child: const Text('Retry'),
                       ),
                     ],
@@ -129,10 +150,7 @@ class _PostFeedViewState extends State<PostFeedView> {
 
     final itemCount = loadingFirst ? 6 : feed.posts.length;
 
-    return RefreshIndicator(
-      key: _refreshKey,
-      onRefresh: _onRefresh,
-      displacement: widget.contentInsetTop + 24,
+    return _wrapRefresh(
       child: MasonryGridView.count(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -190,40 +208,46 @@ class _SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
+    final colors = Theme.of(context).colorScheme;
+    final fill = colors.surfaceContainerHighest;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AspectRatio(
-          aspectRatio: 1 / aspect,
-          child: DecoratedBox(
+    return M3ESegmentedItem(
+      index: 0,
+      position: M3ESegmentedItemPosition.single,
+      outerRadius: 16,
+      innerRadius: 16,
+      gap: 0,
+      color: colors.surfaceContainerHigh,
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 1 / aspect,
+            child: ColoredBox(color: fill),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(8, 0, 32, 0),
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+              color: fill,
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 12,
-          width: double.infinity,
-          margin: const EdgeInsets.only(right: 24),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            width: 80,
+            margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 12,
-          width: 80,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -252,7 +276,12 @@ class _FeedFooter extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            M3EButton(
+              onPressed: onRetry,
+              style: M3EButtonStyle.text,
+              shape: M3EButtonShape.round,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
