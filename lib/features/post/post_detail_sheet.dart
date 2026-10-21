@@ -1,26 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
+import '../map/map_preview_controller.dart';
 import 'post_detail_body.dart';
 import 'post_detail_controller.dart';
+import 'post_feed_controller.dart';
 import 'post_format.dart';
 import 'post_model.dart';
 import 'post_photos.dart';
 
 Future<void> showPostDetailSheet(BuildContext context, int postId) {
+  final previewThumbUrl = resolvePostPreviewThumb(postId);
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (context) => PostDetailSheet(postId: postId),
+    builder: (context) => PostDetailSheet(
+      postId: postId,
+      previewThumbUrl: previewThumbUrl,
+    ),
   );
 }
 
+/// Thumb URL known before detail fetch (feed card or map preview cache).
+String? resolvePostPreviewThumb(int postId) {
+  final feed = GetIt.instance<PostFeedController>();
+  for (final post in feed.posts) {
+    if (post.id == postId && post.thumbUrl != null && post.thumbUrl!.isNotEmpty) {
+      return post.thumbUrl;
+    }
+  }
+  final mapThumb = GetIt.instance<MapPreviewController>().peek(postId)?.thumbUrl;
+  if (mapThumb != null && mapThumb.isNotEmpty) {
+    return mapThumb;
+  }
+  return null;
+}
+
 class PostDetailSheet extends StatefulWidget {
-  const PostDetailSheet({super.key, required this.postId});
+  const PostDetailSheet({
+    super.key,
+    required this.postId,
+    this.previewThumbUrl,
+  });
 
   final int postId;
+  final String? previewThumbUrl;
 
   @override
   State<PostDetailSheet> createState() => _PostDetailSheetState();
@@ -53,7 +79,7 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final sheetHeight = (media.size.height - media.padding.top - 28).clamp(
+    final sheetHeight = (media.size.height * 0.75).clamp(
       320.0,
       media.size.height,
     );
@@ -63,17 +89,28 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
     final photoIndex = photos.isEmpty
         ? 0
         : _controller.photoIndex.clamp(0, photos.length - 1);
-    final heroHeight = media.size.height * 0.5;
+    final maxHeroHeight = media.size.height * 0.45;
+    final previewThumb = widget.previewThumbUrl;
+    final showLoadingHero =
+        _controller.loading && previewThumb != null && photos.isEmpty;
 
     return SizedBox(
       height: sheetHeight,
       child: ListView(
         children: [
-          if (_controller.loading) const _DetailSkeleton(),
+          if (showLoadingHero)
+            PostLoadingThumbHero(
+              postId: widget.postId,
+              thumbUrl: previewThumb,
+              maxHeight: maxHeroHeight,
+            ),
+          if (_controller.loading)
+            _DetailSkeleton(includePhotoPlaceholder: !showLoadingHero),
           if (photos.isNotEmpty && !_controller.loading)
             PostPhotos(
+              postId: widget.postId,
               photos: photos,
-              height: heroHeight,
+              maxHeight: maxHeroHeight,
               index: photoIndex,
               onIndex: _controller.setPhotoIndex,
             ),
@@ -112,7 +149,9 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
 }
 
 class _DetailSkeleton extends StatelessWidget {
-  const _DetailSkeleton();
+  const _DetailSkeleton({this.includePhotoPlaceholder = true});
+
+  final bool includePhotoPlaceholder;
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +160,8 @@ class _DetailSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(height: 288, width: double.infinity, color: color),
+        if (includePhotoPlaceholder)
+          Container(height: 288, width: double.infinity, color: color),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
