@@ -6,6 +6,8 @@ import 'package:progressive_blur/progressive_blur.dart';
 import 'core/di/locator.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/home/main_screen.dart';
+import 'features/settings/theme_controller.dart';
+import 'features/settings/visual_settings_controller.dart';
 import 'utils/fumo_color_themes.dart';
 
 Future<void> main() async {
@@ -14,6 +16,10 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   await ProgressiveBlurWidget.precache();
   setupDI();
+  await Future.wait([
+    getIt<ThemeController>().init(),
+    getIt<VisualSettingsController>().init(),
+  ]);
   getIt<AuthController>().init();
   runApp(const MyApp());
 }
@@ -23,21 +29,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    FumoColorThemes colorThemes = FumoColorThemes(context);
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: colorThemes.buildLightTheme(Color(0xFF31a567)),
-      darkTheme: colorThemes.buildDarkTheme(Color(0xFF31a567)),
-      // preserve text dpi scale
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(1.0)),
-          child: child!,
+    final themeController = getIt<ThemeController>();
+    final colorThemes = FumoColorThemes(context);
+
+    return ListenableBuilder(
+      listenable: themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Fumospots',
+          theme: colorThemes.buildLightTheme(const Color(0xFF31a567)),
+          darkTheme: colorThemes.buildDarkTheme(const Color(0xFF31a567)),
+          themeMode: themeController.mode,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(1.0)),
+              child: child!,
+            );
+          },
+          home: const MainScreen(),
         );
       },
-      home: const MainScreen(title: 'FUMOSPOTS'),
     );
   }
 }

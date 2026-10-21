@@ -6,6 +6,8 @@ import '../../features/auth/auth_session_store.dart';
 import '../../features/post/post_detail_controller.dart';
 import '../../features/post/post_feed_controller.dart';
 import '../../features/post/post_repository.dart';
+import '../../features/settings/theme_controller.dart';
+import '../../features/settings/visual_settings_controller.dart';
 import '../config/fumospots_config.dart';
 import '../services/fumo_client.dart';
 import '../services/fumo_store.dart';
@@ -31,6 +33,16 @@ void setupDI() {
 
   if (!getIt.isRegistered<ImageCacheService>()) {
     getIt.registerLazySingleton<ImageCacheService>(ImageCacheService.new);
+  }
+
+  if (!getIt.isRegistered<ThemeController>()) {
+    getIt.registerLazySingleton<ThemeController>(ThemeController.new);
+  }
+
+  if (!getIt.isRegistered<VisualSettingsController>()) {
+    getIt.registerLazySingleton<VisualSettingsController>(
+      VisualSettingsController.new,
+    );
   }
 
   // Auth
