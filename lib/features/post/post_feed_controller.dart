@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../core/services/fumo_client_error.dart';
@@ -68,8 +69,6 @@ class PostFeedController extends ChangeNotifier {
     loadingMore = false;
     error = null;
     loadMoreError = null;
-    // Keep the current list up while a refresh is in flight. Clearing it
-    // rebuilds the whole grid and leaves the feed blank until the request ends.
     if (posts.isEmpty) {
       _nextOffset = 0;
       postCount = 0;
@@ -130,10 +129,30 @@ class PostFeedController extends ChangeNotifier {
     }
   }
 
+  bool _notifyScheduled = false;
+
   void _notify() {
-    if (!_disposed) {
-      notifyListeners();
+    if (_disposed) {
+      return;
     }
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    final building =
+        phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
+    if (!building) {
+      notifyListeners();
+      return;
+    }
+    if (_notifyScheduled) {
+      return;
+    }
+    _notifyScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      if (!_disposed) {
+        notifyListeners();
+      }
+    });
   }
 
   @override

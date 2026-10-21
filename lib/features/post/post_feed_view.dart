@@ -34,7 +34,13 @@ class _PostFeedViewState extends State<PostFeedView> {
     super.initState();
     _controller.addListener(_onChanged);
     _scrollController.addListener(_onScroll);
-    _controller.load();
+    if (_controller.posts.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _controller.load();
+        }
+      });
+    }
   }
 
   @override
