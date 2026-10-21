@@ -3,6 +3,9 @@
 import '../../features/auth/auth_controller.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/auth_session_store.dart';
+import '../../features/map/map_points_controller.dart';
+import '../../features/map/map_preview_controller.dart';
+import '../../features/map/map_repository.dart';
 import '../../features/post/post_detail_controller.dart';
 import '../../features/post/post_feed_controller.dart';
 import '../../features/post/post_repository.dart';
@@ -88,5 +91,21 @@ void setupDI() {
 
   if (!getIt.isRegistered<PostDetailController>()) {
     getIt.registerFactory<PostDetailController>(PostDetailController.new);
+  }
+
+  // Map
+
+  if (!getIt.isRegistered<MapRepository>()) {
+    getIt.registerLazySingleton<MapRepository>(
+      () => MapRepository(client: getIt<FumoClient>()),
+    );
+  }
+
+  if (!getIt.isRegistered<MapPointsController>()) {
+    getIt.registerLazySingleton<MapPointsController>(MapPointsController.new);
+  }
+
+  if (!getIt.isRegistered<MapPreviewController>()) {
+    getIt.registerLazySingleton<MapPreviewController>(MapPreviewController.new);
   }
 }
