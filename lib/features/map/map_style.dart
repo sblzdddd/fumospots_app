@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../core/config/fumospots_config.dart';
