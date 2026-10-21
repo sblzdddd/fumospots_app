@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class FumospotsConfig {
   const FumospotsConfig({
     required this.siteUrl,
@@ -5,13 +7,23 @@ class FumospotsConfig {
     required this.supabaseAnonKey,
   });
 
-  static const FumospotsConfig fromEnvironment = FumospotsConfig(
-    siteUrl: String.fromEnvironment('SITE_URL'),
-    supabaseUrl: String.fromEnvironment('SUPABASE_URL'),
-    supabaseAnonKey: String.fromEnvironment('SUPABASE_ANON_KEY'),
-  );
+  factory FumospotsConfig.fromDotEnv() {
+    return FumospotsConfig(
+      siteUrl: _require('SITE_URL'),
+      supabaseUrl: _require('SUPABASE_URL'),
+      supabaseAnonKey: _require('SUPABASE_ANON_KEY'),
+    );
+  }
 
   final String siteUrl;
   final String supabaseUrl;
   final String supabaseAnonKey;
+
+  static String _require(String key) {
+    final value = dotenv.maybeGet(key)?.trim();
+    if (value == null || value.isEmpty) {
+      throw StateError('Missing $key in .env');
+    }
+    return value;
+  }
 }

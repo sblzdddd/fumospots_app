@@ -3,6 +3,9 @@ import 'package:get_it/get_it.dart';
 import '../../features/auth/auth_controller.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/auth_session_store.dart';
+import '../../features/post/post_detail_controller.dart';
+import '../../features/post/post_feed_controller.dart';
+import '../../features/post/post_repository.dart';
 import '../config/fumospots_config.dart';
 import '../services/fumo_client.dart';
 import '../services/fumo_store.dart';
@@ -14,7 +17,7 @@ void setupDI() {
   // Basic Services
 
   if (!getIt.isRegistered<FumospotsConfig>()) {
-    getIt.registerSingleton<FumospotsConfig>(FumospotsConfig.fromEnvironment);
+    getIt.registerSingleton<FumospotsConfig>(FumospotsConfig.fromDotEnv());
   }
 
   if (!getIt.isRegistered<FumoStore>()) {
@@ -52,5 +55,21 @@ void setupDI() {
     final interceptor = FumoAuthInterceptor();
     getIt.registerSingleton<FumoAuthInterceptor>(interceptor);
     getIt<FumoClient>().postInitialize(interceptor);
+  }
+
+  // Posts
+
+  if (!getIt.isRegistered<PostRepository>()) {
+    getIt.registerLazySingleton<PostRepository>(
+      () => PostRepository(client: getIt<FumoClient>()),
+    );
+  }
+
+  if (!getIt.isRegistered<PostFeedController>()) {
+    getIt.registerLazySingleton<PostFeedController>(PostFeedController.new);
+  }
+
+  if (!getIt.isRegistered<PostDetailController>()) {
+    getIt.registerFactory<PostDetailController>(PostDetailController.new);
   }
 }

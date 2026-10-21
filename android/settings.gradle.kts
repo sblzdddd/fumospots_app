@@ -15,6 +15,10 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    plugins {
+        id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
+    }
 }
 
 plugins {
