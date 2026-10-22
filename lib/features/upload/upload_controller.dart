@@ -9,10 +9,10 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
-import 'upload_exif.dart';
+import 'photo/upload_exif.dart';
+import 'photo/upload_webp.dart';
 import 'upload_model.dart';
 import 'upload_repository.dart';
-import 'upload_webp.dart';
 
 class UploadController extends ChangeNotifier {
   UploadController({

@@ -4,9 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'upload_controller.dart';
-import 'upload_model.dart';
-import 'upload_section.dart';
+import '../upload_controller.dart';
+import '../upload_model.dart';
+import '../upload_section.dart';
 
 class UploadPhotoSection extends StatelessWidget {
   const UploadPhotoSection({super.key, required this.controller});

@@ -6,10 +6,10 @@ import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../core/services/fumo_client_error.dart';
-import 'auth_controller.dart';
-import 'auth_exception.dart';
-import 'auth_flow.dart';
+import '../../../core/services/fumo_client_error.dart';
+import '../auth_controller.dart';
+import '../auth_exception.dart';
+import '../auth_flow.dart';
 
 class AuthBrowserPage extends StatefulWidget {
   const AuthBrowserPage({

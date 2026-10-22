@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_to_webp/image_to_webp.dart';
 
-import '../../core/services/fumo_client_error.dart';
-import 'upload_model.dart';
+import '../../../core/services/fumo_client_error.dart';
+import '../upload_model.dart';
 
 const _originalLongest = 2048;
 const _thumbLongest = 720;

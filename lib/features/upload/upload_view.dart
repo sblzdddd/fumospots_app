@@ -5,11 +5,11 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'location/upload_location_section.dart';
+import 'photo/upload_photo_section.dart';
 import 'upload_character_field.dart';
 import 'upload_controller.dart';
 import 'upload_detail_fields.dart';
-import 'upload_location_section.dart';
-import 'upload_photo_section.dart';
 
 class UploadView extends StatefulWidget {
   const UploadView({super.key});

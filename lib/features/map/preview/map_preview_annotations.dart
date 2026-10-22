@@ -7,11 +7,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:maplibre/maplibre.dart';
 
-import '../../core/services/image_cache_service.dart';
-import 'map_feature_factory.dart';
-import 'map_model.dart';
+import '../../../core/services/image_cache_service.dart';
+import '../map_feature_factory.dart';
+import '../map_model.dart';
+import '../map_style.dart';
 import 'map_preview_controller.dart';
-import 'map_style.dart';
 
 /// Native MapLibre symbol annotations for post preview thumbs.
 ///

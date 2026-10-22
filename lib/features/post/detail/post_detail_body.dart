@@ -3,9 +3,9 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../character/character_filter_controller.dart';
-import 'post_format.dart';
-import 'post_model.dart';
+import '../../character/filter/character_filter_controller.dart';
+import '../post_format.dart';
+import '../post_model.dart';
 
 class PostDetailBody extends StatelessWidget {
   const PostDetailBody({super.key, required this.detail, required this.locale});

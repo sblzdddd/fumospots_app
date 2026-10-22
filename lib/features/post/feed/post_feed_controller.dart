@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../core/services/fumo_client_error.dart';
-import '../map/map_repository.dart';
-import 'post_model.dart';
-import 'post_repository.dart';
+import '../../../core/services/fumo_client_error.dart';
+import '../../map/map_repository.dart';
+import '../post_model.dart';
+import '../post_repository.dart';
 
 class PostFeedController extends ChangeNotifier {
   PostFeedController({

@@ -1,9 +1,9 @@
 import 'package:flutter_staggered_grid/flutter_staggered_grid.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'post_card.dart';
+import '../post_card.dart';
+import '../post_model.dart';
 import 'post_feed_skeleton_card.dart';
-import 'post_model.dart';
 
 class PostFeedGrid extends StatelessWidget {
   const PostFeedGrid({

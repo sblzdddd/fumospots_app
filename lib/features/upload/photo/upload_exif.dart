@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:exif/exif.dart';
 
-import 'upload_model.dart';
+import '../upload_model.dart';
 
 Future<PhotoExif> readPhotoExif(String path) async {
   final tags = await readExifFromBytes(await File(path).readAsBytes());

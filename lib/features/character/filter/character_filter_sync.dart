@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 
-import 'character_catalog_controller.dart';
+import '../character_catalog_controller.dart';
 import 'character_filter_controller.dart';
 
 /// Resolves selected character IDs to API slugs once the catalog is ready.

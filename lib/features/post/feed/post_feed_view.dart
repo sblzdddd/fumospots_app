@@ -4,9 +4,9 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../character/character_catalog_controller.dart';
-import '../character/character_filter_controller.dart';
-import '../character/character_filter_sync.dart';
+import '../../character/character_catalog_controller.dart';
+import '../../character/filter/character_filter_controller.dart';
+import '../../character/filter/character_filter_sync.dart';
 import 'post_feed_controller.dart';
 import 'post_feed_error_body.dart';
 import 'post_feed_filter_header.dart';

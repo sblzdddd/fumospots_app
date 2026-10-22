@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
-import '../map/map_repository.dart';
+import '../../map/map_repository.dart';
 
 class PostFeedStatsController extends ChangeNotifier {
   PostFeedStatsController({MapRepository? repository})

@@ -5,10 +5,10 @@ import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../auth/auth_controller.dart';
-import '../auth/auth_login_view.dart';
+import '../auth/login/auth_login_view.dart';
 import '../map/spot_map_view.dart';
-import '../post/post_detail_sheet.dart';
-import '../post/post_feed_view.dart';
+import '../post/detail/post_detail_sheet.dart';
+import '../post/feed/post_feed_view.dart';
 import '../settings/visual_settings_controller.dart';
 import '../upload/upload_view.dart';
 import '../user/user_view.dart';

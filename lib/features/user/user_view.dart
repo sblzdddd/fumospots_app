@@ -6,8 +6,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
-import '../auth/auth_login_methods.dart';
-import '../auth/auth_login_view.dart';
+import '../auth/login/auth_login_methods.dart';
+import '../auth/login/auth_login_view.dart';
 import '../settings/settings_view.dart';
 
 class UserView extends StatelessWidget {

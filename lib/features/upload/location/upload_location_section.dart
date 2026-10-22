@@ -2,8 +2,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'upload_controller.dart';
-import 'upload_section.dart';
+import '../upload_controller.dart';
+import '../upload_section.dart';
 
 class UploadLocationSection extends StatelessWidget {
   const UploadLocationSection({

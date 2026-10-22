@@ -2,10 +2,10 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../post/post_format.dart';
-import 'character_catalog_controller.dart';
+import '../../post/post_format.dart';
+import '../character_catalog_controller.dart';
+import '../character_format.dart';
 import 'character_filter_controller.dart';
-import 'character_format.dart';
 
 class CharacterFilterBar extends StatefulWidget {
   const CharacterFilterBar({

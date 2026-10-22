@@ -2,7 +2,7 @@ import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:motor/motor.dart';
 
-import '../character/character_filter_bar.dart';
+import '../../character/filter/character_filter_bar.dart';
 
 const _filterHideMotion = CupertinoMotion.snappy(
   duration: Duration(milliseconds: 460),

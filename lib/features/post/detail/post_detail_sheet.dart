@@ -2,13 +2,13 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../map/map_preview_controller.dart';
+import '../../map/preview/map_preview_controller.dart';
+import '../feed/post_feed_controller.dart';
+import '../post_format.dart';
+import '../post_model.dart';
+import '../post_photos.dart';
 import 'post_detail_body.dart';
 import 'post_detail_controller.dart';
-import 'post_feed_controller.dart';
-import 'post_format.dart';
-import 'post_model.dart';
-import 'post_photos.dart';
 
 /// Fraction of the safe area the post sheet covers when it first opens.
 const postDetailSheetInitialSize = 0.75;

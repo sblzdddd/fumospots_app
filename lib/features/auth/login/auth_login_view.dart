@@ -1,11 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../core/config/fumospots_config.dart';
-import '../../core/services/fumo_client_error.dart';
+import '../../../core/config/fumospots_config.dart';
+import '../../../core/services/fumo_client_error.dart';
+import '../auth_controller.dart';
+import '../auth_flow.dart';
 import 'auth_browser_page.dart';
-import 'auth_controller.dart';
-import 'auth_flow.dart';
 import 'auth_login_fields.dart';
 import 'auth_login_methods.dart';
 import 'auth_login_mode.dart';

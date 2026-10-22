@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
-import 'map_model.dart';
-import 'map_repository.dart';
+import '../map_model.dart';
+import '../map_repository.dart';
 
 /// Caches `/api/map/previews` results keyed by post id.
 class MapPreviewController extends ChangeNotifier {

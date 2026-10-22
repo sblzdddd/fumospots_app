@@ -9,17 +9,17 @@ import 'package:maplibre/maplibre.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../character/character_catalog_controller.dart';
-import '../character/character_filter_bar.dart';
-import '../character/character_filter_controller.dart';
-import '../character/character_filter_sync.dart';
-import '../post/post_detail_sheet.dart';
+import '../character/filter/character_filter_bar.dart';
+import '../character/filter/character_filter_controller.dart';
+import '../character/filter/character_filter_sync.dart';
+import '../post/detail/post_detail_sheet.dart';
 import 'map_click.dart';
 import 'map_feature_factory.dart';
 import 'map_locate.dart';
 import 'map_points_controller.dart';
-import 'map_preview_annotations.dart';
 import 'map_status_banner.dart';
 import 'map_style.dart';
+import 'preview/map_preview_annotations.dart';
 
 class SpotMapView extends StatefulWidget {
   const SpotMapView({

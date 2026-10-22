@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../home/brand_logo.dart';
-import 'post_format.dart';
+import '../../home/brand_logo.dart';
+import '../post_format.dart';
 
 class PostFeedStatsHeader extends StatelessWidget {
   const PostFeedStatsHeader({
