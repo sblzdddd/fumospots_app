@@ -187,7 +187,7 @@ class _UploadViewState extends State<UploadView> {
                   ),
                   label: Text(
                     uploading
-                        ? 'Submitting${progress == null ? '' : ' ${(progress * 100).round()}%'}'
+                        ? '${_controller.progressLabel}${progress == null ? '' : ' ${(progress * 100).round()}%'}'
                         : 'Submit spot',
                   ),
                 ),

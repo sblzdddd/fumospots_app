@@ -47,6 +47,7 @@ class UploadController extends ChangeNotifier {
   bool locating = false;
   bool reverseLookup = false;
   bool uploading = false;
+  String progressLabel = 'Submitting';
   String? error;
   int _photoSeq = 0;
   int _progressDone = 0;
@@ -410,8 +411,9 @@ class UploadController extends ChangeNotifier {
     }
 
     uploading = true;
+    progressLabel = 'Converting';
     _progressDone = 0;
-    _progressTotal = 0;
+    _progressTotal = photos.length * 2;
     _notify();
     final postFolder = newUploadId();
     final attempted = <String>[];
@@ -426,11 +428,16 @@ class UploadController extends ChangeNotifier {
             userId: userId,
             postFolder: postFolder,
             index: index,
+            onStep: () {
+              _progressDone += 1;
+              _notify();
+            },
           ),
         );
       }
       final blobs = [for (final photo in prepared) ...photo.blobs];
-      _progressTotal = blobs.length + 1;
+      progressLabel = 'Uploading';
+      _progressTotal = _progressDone + blobs.length + 1;
       _notify();
       await _repository.uploadBlobs(
         blobs,
@@ -465,6 +472,7 @@ class UploadController extends ChangeNotifier {
       return false;
     } finally {
       uploading = false;
+      progressLabel = 'Submitting';
       _progressDone = 0;
       _progressTotal = 0;
       _notify();

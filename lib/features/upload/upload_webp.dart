@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_to_webp/image_to_webp.dart';
 
@@ -15,6 +15,7 @@ Future<PreparedPhoto> prepareUploadPhoto({
   required String userId,
   required String postFolder,
   required int index,
+  void Function()? onStep,
 }) async {
   final bytes = await File(sourcePath).readAsBytes();
   final type = contentTypeFor(sourcePath, mimeType);
@@ -23,7 +24,9 @@ Future<PreparedPhoto> prepareUploadPhoto({
   }
   _assertSize(bytes);
   final original = await _encodeOriginal(bytes, type);
+  onStep?.call();
   final thumb = await _encodeThumb(bytes);
+  onStep?.call();
   final folder = (index + 1).toString().padLeft(2, '0');
   final imagePath = '$userId/$postFolder/$folder/original.${original.ext}';
   final thumbPath = thumb == null
@@ -79,6 +82,7 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
   String type,
 ) async {
   if (type == 'image/webp' || type == 'image/gif' || type == 'image/avif') {
+    _logConversion('original', bytes.length, bytes.length, 'skipped');
     return (bytes: bytes, type: type, ext: _extFor(type));
   }
   if (type == 'image/jpeg' || type == 'image/png') {
@@ -89,8 +93,15 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
     );
     if (webp != null && webp.length < bytes.length && webp.isNotEmpty) {
       _assertSize(webp);
+      _logConversion('original', bytes.length, webp.length, 'converted');
       return (bytes: webp, type: 'image/webp', ext: 'webp');
     }
+    _logConversion(
+      'original',
+      bytes.length,
+      webp?.length,
+      webp == null ? 'failed' : 'kept',
+    );
     return (bytes: bytes, type: type, ext: _extFor(type));
   }
   final direct = await _toWebp(
@@ -101,8 +112,10 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
   );
   if (direct != null && direct.isNotEmpty) {
     _assertSize(direct);
+    _logConversion('original', bytes.length, direct.length, 'converted');
     return (bytes: direct, type: 'image/webp', ext: 'webp');
   }
+  _logConversion('original', bytes.length, null, 'failed');
   final png = await _png(bytes, longest: 4096);
   if (png == null) {
     throw const FumoClientError('This photo format is not supported.');
@@ -110,8 +123,10 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
   final webp = await _toWebp(png, '.png', _quality(png.length));
   if (webp != null && webp.isNotEmpty) {
     _assertSize(webp);
+    _logConversion('original', bytes.length, webp.length, 'converted');
     return (bytes: webp, type: 'image/webp', ext: 'webp');
   }
+  _logConversion('original', png.length, webp?.length, 'kept');
   _assertSize(png);
   return (bytes: png, type: 'image/png', ext: 'png');
 }
@@ -128,12 +143,30 @@ Future<Uint8List?> _encodeThumb(Uint8List bytes) async {
       webp = await _cliWebp(png, '.png', quality);
     }
     if (webp == null || webp.isEmpty || webp.length > maxPhotoBytes) {
+      _logConversion('thumb', bytes.length, webp?.length, 'skipped');
       return null;
     }
+    _logConversion('thumb', bytes.length, webp.length, 'converted');
     return webp;
   } catch (_) {
+    _logConversion('thumb', bytes.length, null, 'failed');
     return null;
   }
+}
+
+void _logConversion(String kind, int before, int? after, String status) {
+  final output = after == null ? 'n/a' : _formatSize(after);
+  debugPrint('webp $kind: ${_formatSize(before)} -> $output ($status)');
+}
+
+String _formatSize(int bytes) {
+  if (bytes >= 1024 * 1024) {
+    return '$bytes B (${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB)';
+  }
+  if (bytes >= 1024) {
+    return '$bytes B (${(bytes / 1024).toStringAsFixed(1)} KB)';
+  }
+  return '$bytes B';
 }
 
 bool get _useNativeEncoder => Platform.isIOS || Platform.isAndroid;
