@@ -1,4 +1,0 @@
-enum HomeView {
-  waterfall,
-  map,
-}

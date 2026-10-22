@@ -77,11 +77,11 @@ class _SettingsViewState extends State<SettingsView> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           const _SectionLabel('Appearance'),
+          const SizedBox(height: 8),
           M3EToggleButtonGroup(
             type: M3EButtonGroupType.connected,
             style: M3EButtonStyle.tonal,
             shape: M3EButtonShape.round,
-            size: M3EButtonSize.sm,
             selectedIndex: _themeModes.indexOf(_theme.mode),
             onSelectedIndexChanged: (index) {
               if (index != null) {
@@ -106,10 +106,6 @@ class _SettingsViewState extends State<SettingsView> {
           const SizedBox(height: 8),
           const _SectionLabel('Visual'),
           M3ESegmentedColumn(
-            outerRadius: 20,
-            innerRadius: 8,
-            selectedRadius: 20,
-            pressedRadius: 8,
             selectionMode: M3ESelectionMode.multiple,
             selectionTrigger: M3ESelectionTrigger.none,
             splashFactory: InkSparkle.splashFactory,
@@ -119,9 +115,9 @@ class _SettingsViewState extends State<SettingsView> {
             children: [
               Row(
                 children: [
+                  const SizedBox(width: 12),
                   FaIcon(
                     FontAwesomeIcons.droplet,
-                    size: 18,
                     color: cs.onSurfaceVariant,
                   ),
                   const SizedBox(width: 16),
@@ -136,8 +132,8 @@ class _SettingsViewState extends State<SettingsView> {
                         const SizedBox(height: 2),
                         Text(
                           _visual.blurEnabled
-                              ? 'Progressive blur on the app bar'
-                              : 'Gradient fade only (no blur)',
+                              ? 'Blur behind the navigation bar'
+                              : 'Solid navigation bar',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
@@ -159,15 +155,12 @@ class _SettingsViewState extends State<SettingsView> {
           const SizedBox(height: 8),
           const _SectionLabel('Storage'),
           M3ESegmentedColumn(
-            outerRadius: 20,
-            innerRadius: 8,
-            pressedRadius: 8,
-            pressedScale: 0.98,
             splashFactory: InkSparkle.splashFactory,
             onTap: _clearing ? null : (_) => _clearImageCache(),
             children: [
               Row(
                 children: [
+                  const SizedBox(width: 12),
                   FaIcon(
                     FontAwesomeIcons.broom,
                     size: 18,

@@ -1,18 +1,15 @@
-import 'dart:ui';
-
-import 'package:material_ui/material_ui.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
-import 'package:progressive_blur/progressive_blur.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../map/spot_map_view.dart';
 import '../post/post_detail_sheet.dart';
 import '../post/post_feed_view.dart';
+import '../settings/settings_view.dart';
 import '../settings/visual_settings_controller.dart';
 import '../user/user_view.dart';
-import 'home_app_bar.dart';
-import 'home_bottom_navigation.dart';
-import 'home_view.dart';
+import 'bottom_navigation.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,23 +22,23 @@ class _MainScreenState extends State<MainScreen> {
   final VisualSettingsController _visual =
       GetIt.instance<VisualSettingsController>();
   int _selectedIndex = 0;
-  HomeView _homeView = HomeView.waterfall;
   int? _selectedPostId;
+  bool _mapVisited = false;
   final GlobalKey _feedKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _visual.addListener(_onVisualChanged);
+    _visual.addListener(_onChanged);
   }
 
   @override
   void dispose() {
-    _visual.removeListener(_onVisualChanged);
+    _visual.removeListener(_onChanged);
     super.dispose();
   }
 
-  void _onVisualChanged() {
+  void _onChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -55,85 +52,105 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Widget _blurBehindHeader(BuildContext context, Widget child) {
-    if (!_visual.blurEnabled) {
-      return child;
-    }
-    final headerHeight = HomeAppBar.headerHeightOf(context);
-    final height = MediaQuery.sizeOf(context).height;
-    final fadeStop = height <= 0
-        ? 0.0
-        : (headerHeight / height).clamp(0.0, 0.2);
-    final surface = Theme.of(context).colorScheme.surface;
-    return ProgressiveBlurWidget(
-      sigma: 32.0,
-      tintColor: surface.withValues(alpha: 0.8),
-      linearGradientBlur: LinearGradientBlur(
-        values: const [1, 0],
-        stops: [0, fadeStop],
-        start: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ),
-      child: child,
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SettingsView()),
     );
+  }
+
+  void _onDestinationSelected(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 1) {
+        _mapVisited = true;
+      }
+    });
+  }
+
+  void _onAddPressed() {
+    // Placeholder for create-spot flow.
   }
 
   @override
   Widget build(BuildContext context) {
-    final headerHeight = HomeAppBar.headerHeightOf(context);
-    final nav = HomeBottomNavigation(
-      selectedIndex: _selectedIndex,
-      onDestinationSelected: (index) {
-        setState(() => _selectedIndex = index);
-      },
-    );
+    final topInset = MediaQuery.paddingOf(context).top;
+    final cs = Theme.of(context).colorScheme;
+    final onProfile = _selectedIndex == 2;
 
     return Scaffold(
-      extendBody: true,
-      body: HomeAppBar(
-        selectedIndex: _selectedIndex,
-        homeView: _homeView,
-        onHomeViewChange: (view) => setState(() => _homeView = view),
-        child: _selectedIndex == 0
-            ? IndexedStack(
-                index: _homeView == HomeView.waterfall ? 0 : 1,
-                children: [
-                  _blurBehindHeader(
-                    context,
-                    PostFeedView(
-                      key: _feedKey,
-                      contentInsetTop: headerHeight,
-                      onOpenPost: _openPost,
-                    ),
-                  ),
-                  if (_homeView == HomeView.map)
-                    SpotMapView(
-                      contentInsetTop: headerHeight,
-                      selectedPostId: _selectedPostId,
-                      onOpenPost: _openPost,
-                    )
-                  else
-                    const SizedBox.expand(),
-                ],
-              )
-            : _blurBehindHeader(
-                context,
-                UserView(contentInsetTop: headerHeight),
-              ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const FaIcon(FontAwesomeIcons.plus),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _visual.blurEnabled
-          ? ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                child: nav,
-              ),
+      appBar: onProfile
+          ? AppBar(
+              title: const Text('Profile'),
+              actions: [
+                IconButton(
+                  tooltip: 'Settings',
+                  onPressed: _openSettings,
+                  icon: const FaIcon(FontAwesomeIcons.gear, size: 18),
+                ),
+              ],
             )
-          : nav,
+          : null,
+      body: BottomBar(
+        layout: const BottomBarLayout.adaptive(
+          maxWidth: 400,
+          offset: 24,
+          borderRadius: BorderRadius.all(Radius.circular(32)),
+          clip: Clip.none,
+        ),
+        motion: const BottomBarMotion.cupertino(
+          preset: BottomBarCupertinoMotion.snappy,
+          duration: Duration(milliseconds: 460),
+          extraBounce: 0.03,
+        ),
+        scrollBehavior: const BottomBarScrollBehavior(
+          hideOnScroll: true,
+          showAtStart: true,
+        ),
+        theme: BottomBarThemeData(
+          barDecoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          iconDecoration: BoxDecoration(
+            color: cs.primary,
+            shape: BoxShape.circle,
+          ),
+          iconWidth: 40,
+          iconHeight: 40,
+        ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            PostFeedView(
+              key: _feedKey,
+              contentInsetTop: topInset,
+              onOpenPost: _openPost,
+            ),
+            if (_mapVisited)
+              SpotMapView(
+                contentInsetTop: topInset,
+                selectedPostId: _selectedPostId,
+                onOpenPost: _openPost,
+              )
+            else
+              const SizedBox.expand(),
+            const UserView(),
+          ],
+        ),
+        child: FloatingBottomDock(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onDestinationSelected,
+          onAddPressed: _onAddPressed,
+          blurEnabled: _visual.blurEnabled,
+        ),
+      ),
     );
   }
 }

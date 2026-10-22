@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:progressive_blur/progressive_blur.dart';
 
 import 'core/di/locator.dart';
 import 'features/auth/auth_controller.dart';
@@ -14,7 +13,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   RendererBinding.instance.ensureSemantics();
   await dotenv.load(fileName: '.env');
-  await ProgressiveBlurWidget.precache();
   setupDI();
   await Future.wait([
     getIt<ThemeController>().init(),
@@ -49,6 +47,7 @@ class MyApp extends StatelessWidget {
             );
           },
           home: const MainScreen(),
+          debugShowCheckedModeBanner: false,
         );
       },
     );
