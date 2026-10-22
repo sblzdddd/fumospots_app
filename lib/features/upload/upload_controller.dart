@@ -47,6 +47,8 @@ class UploadController extends ChangeNotifier {
   bool locating = false;
   bool reverseLookup = false;
   bool uploading = false;
+  bool benchmarking = false;
+  String? benchmarkResult;
   String progressLabel = 'Submitting';
   String? error;
   int _photoSeq = 0;
@@ -55,7 +57,8 @@ class UploadController extends ChangeNotifier {
   bool _disposed = false;
   UploadLatLng? exactLocation;
 
-  bool get canAddPhoto => photos.length < maxPostPhotos && !uploading;
+  bool get canAddPhoto =>
+      photos.length < maxPostPhotos && !uploading && !benchmarking;
 
   double? get uploadProgress {
     if (!uploading || _progressTotal == 0) return null;
@@ -64,6 +67,7 @@ class UploadController extends ChangeNotifier {
 
   bool get canSubmit =>
       !uploading &&
+      !benchmarking &&
       photos.isNotEmpty &&
       title.trim().isNotEmpty &&
       characterIds.isNotEmpty &&
@@ -147,8 +151,47 @@ class UploadController extends ChangeNotifier {
     }
   }
 
+  Future<void> benchmarkConversions() async {
+    if (photos.isEmpty || uploading || benchmarking) return;
+    benchmarking = true;
+    benchmarkResult = null;
+    error = null;
+    _notify();
+    final pending = List<UploadPhoto>.of(photos);
+    final watch = Stopwatch()..start();
+    try {
+      for (var i = 0; i < pending.length; i++) {
+        final photo = pending[i];
+        final step = Stopwatch()..start();
+        await prepareUploadPhoto(
+          sourcePath: photo.path,
+          mimeType: photo.mimeType,
+          userId: 'benchmark',
+          postFolder: '00000000-0000-4000-8000-000000000000',
+          index: i,
+        );
+        step.stop();
+        debugPrint(
+          'webp photo ${i + 1}/${pending.length}: ${step.elapsedMilliseconds} ms',
+        );
+      }
+      watch.stop();
+      final seconds = (watch.elapsedMilliseconds / 1000).toStringAsFixed(2);
+      benchmarkResult = '${pending.length} photos in $seconds s';
+      debugPrint('webp total: $benchmarkResult');
+    } on FumoClientError catch (error) {
+      this.error = error.message;
+      benchmarkResult = 'Conversion failed';
+    } catch (_) {
+      benchmarkResult = 'Conversion failed';
+    } finally {
+      benchmarking = false;
+      _notify();
+    }
+  }
+
   Future<void> addPicked(List<XFile> files) async {
-    if (files.isEmpty || uploading) return;
+    if (files.isEmpty || uploading || benchmarking) return;
     error = null;
     final accepted = <UploadPhoto>[];
     var rejectedType = false;
@@ -367,7 +410,7 @@ class UploadController extends ChangeNotifier {
   }
 
   Future<bool> submit() async {
-    if (uploading) return false;
+    if (uploading || benchmarking) return false;
     error = null;
     if (!await applyCoordinates()) return false;
     final trimmedTitle = title.trim();

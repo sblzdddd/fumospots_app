@@ -29,7 +29,7 @@ class UploadPhotoSection extends StatelessWidget {
         const SizedBox(height: 8),
         _PhotoStrip(
           photos: controller.photos,
-          enabled: !uploading,
+          enabled: !uploading && !controller.benchmarking,
           onAdd: controller.canAddPhoto ? controller.pickFromGallery : null,
           onRemove: controller.removePhoto,
           onMove: controller.movePhoto,
@@ -47,6 +47,25 @@ class UploadPhotoSection extends StatelessWidget {
             onPressed: canAdd ? controller.pickFromCamera : null,
           ),
         ),
+        const SizedBox(height: 8),
+        M3EButton(
+          onPressed:
+              controller.photos.isEmpty || uploading || controller.benchmarking
+              ? null
+              : controller.benchmarkConversions,
+          style: M3EButtonStyle.tonal,
+          shape: M3EButtonShape.round,
+          size: M3EButtonSize.sm,
+          child: Text(controller.benchmarking ? 'Timing…' : 'Time conversion'),
+        ),
+        if (controller.benchmarkResult != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            controller.benchmarkResult!,
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ],
         if (controller.detectingExif) ...[
           const SizedBox(height: 8),
           Text(

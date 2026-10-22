@@ -9,6 +9,10 @@ import 'package:image_to_webp/image_to_webp.dart';
 import '../../core/services/fumo_client_error.dart';
 import 'upload_model.dart';
 
+const _originalLongest = 2048;
+const _thumbLongest = 720;
+const _preScaleEdge = 2560;
+
 Future<PreparedPhoto> prepareUploadPhoto({
   required String sourcePath,
   required String? mimeType,
@@ -25,7 +29,7 @@ Future<PreparedPhoto> prepareUploadPhoto({
   _assertSize(bytes);
   final original = await _encodeOriginal(bytes, type);
   onStep?.call();
-  final thumb = await _encodeThumb(bytes);
+  final thumb = await _encodeThumb(original.bytes, sourceBytes: bytes.length);
   onStep?.call();
   final folder = (index + 1).toString().padLeft(2, '0');
   final imagePath = '$userId/$postFolder/$folder/original.${original.ext}';
@@ -81,19 +85,33 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
   Uint8List bytes,
   String type,
 ) async {
+  final watch = Stopwatch()..start();
   if (type == 'image/webp' || type == 'image/gif' || type == 'image/avif') {
-    _logConversion('original', bytes.length, bytes.length, 'skipped');
+    _logConversion(
+      'original',
+      bytes.length,
+      bytes.length,
+      'skipped',
+      watch.elapsed,
+    );
     return (bytes: bytes, type: type, ext: _extFor(type));
   }
   if (type == 'image/jpeg' || type == 'image/png') {
-    final webp = await _toWebp(
+    final webp = await _convertWebp(
       bytes,
       '.${_extFor(type)}',
       _quality(bytes.length),
+      longest: _originalLongest,
     );
     if (webp != null && webp.length < bytes.length && webp.isNotEmpty) {
       _assertSize(webp);
-      _logConversion('original', bytes.length, webp.length, 'converted');
+      _logConversion(
+        'original',
+        bytes.length,
+        webp.length,
+        'converted',
+        watch.elapsed,
+      );
       return (bytes: webp, type: 'image/webp', ext: 'webp');
     }
     _logConversion(
@@ -101,62 +119,103 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
       bytes.length,
       webp?.length,
       webp == null ? 'failed' : 'kept',
+      watch.elapsed,
     );
     return (bytes: bytes, type: type, ext: _extFor(type));
   }
-  final direct = await _toWebp(
+  final direct = await _convertWebp(
     bytes,
     '.jpg',
     _quality(bytes.length),
-    longest: 4096,
+    longest: _originalLongest,
   );
   if (direct != null && direct.isNotEmpty) {
     _assertSize(direct);
-    _logConversion('original', bytes.length, direct.length, 'converted');
+    _logConversion(
+      'original',
+      bytes.length,
+      direct.length,
+      'converted',
+      watch.elapsed,
+    );
     return (bytes: direct, type: 'image/webp', ext: 'webp');
   }
-  _logConversion('original', bytes.length, null, 'failed');
-  final png = await _png(bytes, longest: 4096);
+  final png = await _png(bytes, longest: _originalLongest);
   if (png == null) {
+    _logConversion('original', bytes.length, null, 'failed', watch.elapsed);
     throw const FumoClientError('This photo format is not supported.');
   }
-  final webp = await _toWebp(png, '.png', _quality(png.length));
+  final webp = await _convertWebp(png, '.png', _quality(png.length));
   if (webp != null && webp.isNotEmpty) {
     _assertSize(webp);
-    _logConversion('original', bytes.length, webp.length, 'converted');
+    _logConversion(
+      'original',
+      bytes.length,
+      webp.length,
+      'converted',
+      watch.elapsed,
+    );
     return (bytes: webp, type: 'image/webp', ext: 'webp');
   }
-  _logConversion('original', png.length, webp?.length, 'kept');
+  _logConversion('original', png.length, webp?.length, 'kept', watch.elapsed);
   _assertSize(png);
   return (bytes: png, type: 'image/png', ext: 'png');
 }
 
-Future<Uint8List?> _encodeThumb(Uint8List bytes) async {
+Future<Uint8List?> _encodeThumb(
+  Uint8List bytes, {
+  required int sourceBytes,
+}) async {
+  final watch = Stopwatch()..start();
   try {
-    final quality = math.max(62, _quality(bytes.length) - 6);
+    final quality = math.max(62, _quality(sourceBytes) - 6);
     final Uint8List? webp;
     if (_useNativeEncoder) {
-      webp = await _nativeWebp(bytes, quality: quality, longest: 720);
+      webp = await _convertWebp(
+        bytes,
+        '.webp',
+        quality,
+        longest: _thumbLongest,
+      );
     } else {
-      final png = await _png(bytes, longest: 720);
-      if (png == null) return null;
-      webp = await _cliWebp(png, '.png', quality);
+      final png = await _png(bytes, longest: _thumbLongest);
+      webp = png == null ? null : await _cliWebp(png, '.png', quality);
     }
     if (webp == null || webp.isEmpty || webp.length > maxPhotoBytes) {
-      _logConversion('thumb', bytes.length, webp?.length, 'skipped');
+      _logConversion(
+        'thumb',
+        sourceBytes,
+        webp?.length,
+        'skipped',
+        watch.elapsed,
+      );
       return null;
     }
-    _logConversion('thumb', bytes.length, webp.length, 'converted');
+    _logConversion(
+      'thumb',
+      sourceBytes,
+      webp.length,
+      'converted',
+      watch.elapsed,
+    );
     return webp;
   } catch (_) {
-    _logConversion('thumb', bytes.length, null, 'failed');
+    _logConversion('thumb', sourceBytes, null, 'failed', watch.elapsed);
     return null;
   }
 }
 
-void _logConversion(String kind, int before, int? after, String status) {
+void _logConversion(
+  String kind,
+  int before,
+  int? after,
+  String status,
+  Duration elapsed,
+) {
   final output = after == null ? 'n/a' : _formatSize(after);
-  debugPrint('webp $kind: ${_formatSize(before)} -> $output ($status)');
+  debugPrint(
+    'webp $kind: ${_formatSize(before)} -> $output ($status, ${elapsed.inMilliseconds} ms)',
+  );
 }
 
 String _formatSize(int bytes) {
@@ -171,16 +230,24 @@ String _formatSize(int bytes) {
 
 bool get _useNativeEncoder => Platform.isIOS || Platform.isAndroid;
 
-Future<Uint8List?> _toWebp(
+Future<Uint8List?> _convertWebp(
   Uint8List bytes,
   String extension,
   int quality, {
   int? longest,
 }) async {
-  if (_useNativeEncoder) {
-    return _nativeWebp(bytes, quality: quality, longest: longest);
+  if (!_useNativeEncoder) {
+    return _cliWebp(bytes, extension, quality);
   }
-  return _cliWebp(bytes, extension, quality);
+  if (longest != null) {
+    final size = await _size(bytes);
+    final edge = size == null ? 0 : math.max(size.width, size.height);
+    if (edge > _preScaleEdge && edge > longest) {
+      final png = await _png(bytes, longest: longest);
+      if (png != null) return _nativeWebp(png, quality: quality);
+    }
+  }
+  return _nativeWebp(bytes, quality: quality, longest: longest);
 }
 
 Future<Uint8List?> _nativeWebp(
