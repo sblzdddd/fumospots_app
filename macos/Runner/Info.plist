@@ -28,5 +28,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Fill in a spot from your current location.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to post a spot.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose photos to post a spot.</string>
 </dict>
 </plist>

@@ -5,9 +5,13 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Show your current location on the map.</string>
+	<string>Show your current location on the map and fill in a spot.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Show your current location on the map.</string>
+	<string>Show your current location on the map and fill in a spot.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose photos to post a spot.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to post a spot.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

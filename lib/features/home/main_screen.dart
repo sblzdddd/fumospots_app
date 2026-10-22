@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../auth/auth_controller.dart';
+import '../auth/auth_login_view.dart';
 import '../map/spot_map_view.dart';
 import '../post/post_detail_sheet.dart';
 import '../post/post_feed_view.dart';
 import '../settings/visual_settings_controller.dart';
+import '../upload/upload_view.dart';
 import '../user/user_view.dart';
 import 'bottom_navigation.dart';
 
@@ -60,7 +65,25 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onAddPressed() {
-    // Placeholder for create-spot flow.
+    unawaited(_openComposer());
+  }
+
+  Future<void> _openComposer() async {
+    final auth = GetIt.instance<AuthController>();
+    await auth.init();
+    if (!mounted) return;
+    if (!auth.isSignedIn || !auth.hasUsername) {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(builder: (_) => const AuthLoginView()),
+      );
+      if (!mounted || !auth.isSignedIn || !auth.hasUsername) return;
+    }
+    final message = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(builder: (_) => const UploadView()),
+    );
+    if (!mounted || message == null || message.isEmpty) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
