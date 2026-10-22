@@ -3,12 +3,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:maplibre/maplibre.dart';
 
-/// Location permission + map tracking helpers.
 class MapLocate {
   bool enabled = false;
 
-  /// MapLibre Android's permission Future can hang after the system dialog
-  /// (JNI listener released before the callback). Poll + resume instead.
   Future<bool> ensurePermission({
     String explanation = 'Show your current location on the map.',
   }) async {
@@ -40,7 +37,6 @@ class MapLocate {
             })
             .catchError((Object _) {
               finish();
-              return false;
             }),
       );
 
