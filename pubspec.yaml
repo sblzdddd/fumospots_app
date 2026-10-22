@@ -49,6 +49,7 @@ dependencies:
   m3e_core: ^1.1.4
   flutter_floating_bottom_bar: ^3.0.1
   motor: ^1.1.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

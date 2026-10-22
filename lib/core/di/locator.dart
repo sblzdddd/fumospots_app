@@ -64,6 +64,7 @@ void setupDI() {
       AuthRepository(
         client: getIt<FumoClient>(),
         sessions: getIt<AuthSessionStore>(),
+        config: getIt<FumospotsConfig>(),
       ),
     );
   }

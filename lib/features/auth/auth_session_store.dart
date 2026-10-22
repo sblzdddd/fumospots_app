@@ -11,10 +11,16 @@ class AuthSessionStore {
   final FumoStore _store;
 
   Future<AuthSession?> read() async {
+    final accessToken = (await _store.read(key: accessTokenKey))?.trim() ?? '';
+    final refreshToken =
+        (await _store.read(key: refreshTokenKey))?.trim() ?? '';
+    if (accessToken.isEmpty || refreshToken.isEmpty) {
+      return null;
+    }
     return AuthSession(
-      accessToken: await _store.read(key: accessTokenKey) ?? '',
-      refreshToken: await _store.read(key: refreshTokenKey) ?? '',
-      expiresAt: int.tryParse(await _store.read(key: expiresAtKey) ?? '0') ?? 0,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: int.tryParse(await _store.read(key: expiresAtKey) ?? '') ?? 0,
     );
   }
 

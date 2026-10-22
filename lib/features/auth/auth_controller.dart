@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../core/services/fumo_client_error.dart';
 import 'auth_exception.dart';
+import 'auth_flow.dart';
 import 'auth_model.dart';
 import 'auth_repository.dart';
 
@@ -33,37 +34,114 @@ class AuthController extends ChangeNotifier {
     return _initFuture ??= _restore();
   }
 
-  Future<void> sendEmailLogin({required String email}) async {
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) {
     final normalizedEmail = _normalizeEmail(email);
-    await _run(() => _repository.sendEmailLogin(email: normalizedEmail));
+    return _run(() async {
+      final nextSession = await _repository.signInWithPassword(
+        email: normalizedEmail,
+        password: password,
+      );
+      await _commitSession(nextSession);
+    });
   }
 
-  Future<void> verifyEmailLogin({
+  Future<bool> signUpWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final normalizedEmail = _normalizeEmail(email);
+    var established = false;
+    await _run(() async {
+      final nextSession = await _repository.signUpWithPassword(
+        email: normalizedEmail,
+        password: password,
+      );
+      if (nextSession == null) {
+        return;
+      }
+      await _commitSession(nextSession);
+      established = true;
+    });
+    return established;
+  }
+
+  Future<void> sendMagicLink({required String email}) {
+    final normalizedEmail = _normalizeEmail(email);
+    return _run(() => _repository.sendMagicLink(email: normalizedEmail));
+  }
+
+  Future<void> verifyEmailCode({
     required String email,
     required String token,
-  }) async {
+    required String type,
+  }) {
     final normalizedEmail = _normalizeEmail(email);
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) {
       throw const AuthException('Email verification code is required.');
     }
-
-    await _run(() async {
-      final nextSession = await _repository.verifyEmailLogin(
+    return _run(() async {
+      final nextSession = await _repository.verifyEmailCode(
         email: normalizedEmail,
         token: normalizedToken,
+        type: type,
       );
-      await _applySession(nextSession);
-      if (user == null) {
-        throw AuthException(errorMessage ?? 'Could not load your profile.');
-      }
+      await _commitSession(nextSession);
+    });
+  }
+
+  Future<void> completeAuthorizationCode({
+    required String code,
+    required String codeVerifier,
+  }) {
+    return _run(() async {
+      final nextSession = await _repository.exchangeAuthorizationCode(
+        code: code,
+        codeVerifier: codeVerifier,
+      );
+      await _commitSession(nextSession);
+    });
+  }
+
+  Future<void> completeImplicitSession({
+    required String accessToken,
+    required String refreshToken,
+    int? expiresAt,
+    int? expiresIn,
+  }) {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final nextSession = AuthSession(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt ?? now + (expiresIn ?? 3600),
+    );
+    return _run(() async {
+      await _repository.saveSession(nextSession);
+      await _commitSession(nextSession);
+    });
+  }
+
+  Future<void> saveUsername(String username) {
+    final normalized = username.trim().toLowerCase();
+    if (!authUsernamePattern.hasMatch(normalized)) {
+      throw const AuthException(
+        'Author ID must be 3-24 letters, numbers, underscores, or hyphens.',
+      );
+    }
+    return _run(() async {
+      await _repository.saveUsername(normalized);
+      user = await _repository.fetchCurrentUser();
+      errorMessage = null;
     });
   }
 
   String _normalizeEmail(String email) {
     final normalizedEmail = email.trim();
     if (normalizedEmail.isEmpty) {
-      throw const AuthException('Email is required.');
+      throw const AuthException('Please enter an email address.');
     }
     return normalizedEmail;
   }
@@ -84,6 +162,8 @@ class AuthController extends ChangeNotifier {
     await _run(() async {
       if (accessToken != null && accessToken.isNotEmpty) {
         await _repository.signOut(accessToken);
+      } else {
+        await _repository.clearStoredSession();
       }
       session = null;
       user = null;
@@ -108,38 +188,55 @@ class AuthController extends ChangeNotifier {
       _notify();
     } on FumoClientError catch (error) {
       errorMessage = error.message;
+      if (error.isUnauthorized) {
+        session = null;
+        user = null;
+        await _repository.clearStoredSession();
+      }
       ready = true;
       _notify();
     }
   }
 
-  Future<void> _applySession(AuthSession nextSession) async {
+  Future<void> _commitSession(AuthSession next) async {
+    final applied = await _applySession(next);
+    if (applied || user != null) {
+      return;
+    }
+    throw AuthException(errorMessage ?? 'Could not load your profile.');
+  }
+
+  Future<bool> _applySession(AuthSession nextSession) async {
     final revision = ++_revision;
     var current = nextSession;
-    if (current.expiresAt - DateTime.now().millisecondsSinceEpoch ~/ 1000 <= 30) {
+    if (current.expiresAt - DateTime.now().millisecondsSinceEpoch ~/ 1000 <=
+        30) {
       current = await _repository.refreshSession(current.refreshToken);
     }
     if (revision != _revision) {
-      return;
+      return false;
     }
     session = current;
 
     try {
       final nextUser = await _repository.fetchCurrentUser();
       if (revision != _revision) {
-        return;
+        return false;
       }
       user = nextUser;
       errorMessage = null;
+      return true;
     } on FumoClientError catch (error) {
       if (revision != _revision) {
-        return;
+        return false;
       }
       user = null;
       if (error.isUnauthorized) {
         session = null;
+        await _repository.clearStoredSession();
       }
       errorMessage = error.message;
+      return false;
     }
   }
 
