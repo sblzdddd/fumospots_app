@@ -1,6 +1,9 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../character/character_filter_controller.dart';
 import 'post_format.dart';
 import 'post_model.dart';
 
@@ -108,41 +111,20 @@ class PostDetailBody extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: detail.characters.map((character) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+              children: [
+                for (final character in detail.characters)
+                  M3EButton(
+                    onPressed: () {
+                      GetIt.instance<CharacterFilterController>()
+                          .setSelectedIds([character.id]);
+                      Navigator.of(context).maybePop();
+                    },
+                    style: M3EButtonStyle.tonal,
+                    shape: M3EButtonShape.round,
+                    size: M3EButtonSize.sm,
+                    child: Text(characterName(character, locale)),
                   ),
-                  decoration: BoxDecoration(
-                    color: colors.onSurface.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: colors.outlineVariant),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '#',
-                        style: bodyStyle?.copyWith(
-                          color: colors.primary,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        characterName(character, locale),
-                        style: bodyStyle?.copyWith(
-                          fontSize: 13,
-                          decoration: TextDecoration.underline,
-                          decorationColor: colors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+              ],
             ),
           ],
         ],
