@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
@@ -6,7 +5,6 @@ import 'package:material_ui/material_ui.dart';
 import '../map/spot_map_view.dart';
 import '../post/post_detail_sheet.dart';
 import '../post/post_feed_view.dart';
-import '../settings/settings_view.dart';
 import '../settings/visual_settings_controller.dart';
 import '../user/user_view.dart';
 import 'bottom_navigation.dart';
@@ -52,12 +50,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SettingsView()),
-    );
-  }
-
   void _onDestinationSelected(int index) {
     setState(() {
       _selectedIndex = index;
@@ -75,21 +67,8 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final cs = Theme.of(context).colorScheme;
-    final onProfile = _selectedIndex == 2;
 
     return Scaffold(
-      appBar: onProfile
-          ? AppBar(
-              title: const Text('Profile'),
-              actions: [
-                IconButton(
-                  tooltip: 'Settings',
-                  onPressed: _openSettings,
-                  icon: const FaIcon(FontAwesomeIcons.gear, size: 18),
-                ),
-              ],
-            )
-          : null,
       body: BottomBar(
         layout: const BottomBarLayout.adaptive(
           maxWidth: 400,
