@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_to_webp/image_to_webp.dart';
 
 import '../../core/services/fumo_client_error.dart';
@@ -92,6 +93,16 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
     }
     return (bytes: bytes, type: type, ext: _extFor(type));
   }
+  final direct = await _toWebp(
+    bytes,
+    '.jpg',
+    _quality(bytes.length),
+    longest: 4096,
+  );
+  if (direct != null && direct.isNotEmpty) {
+    _assertSize(direct);
+    return (bytes: direct, type: 'image/webp', ext: 'webp');
+  }
   final png = await _png(bytes, longest: 4096);
   if (png == null) {
     throw const FumoClientError('This photo format is not supported.');
@@ -107,13 +118,15 @@ Future<({Uint8List bytes, String type, String ext})> _encodeOriginal(
 
 Future<Uint8List?> _encodeThumb(Uint8List bytes) async {
   try {
-    final png = await _png(bytes, longest: 720);
-    if (png == null) return null;
-    final webp = await _toWebp(
-      png,
-      '.png',
-      math.max(62, _quality(bytes.length) - 6),
-    );
+    final quality = math.max(62, _quality(bytes.length) - 6);
+    final Uint8List? webp;
+    if (_useNativeEncoder) {
+      webp = await _nativeWebp(bytes, quality: quality, longest: 720);
+    } else {
+      final png = await _png(bytes, longest: 720);
+      if (png == null) return null;
+      webp = await _cliWebp(png, '.png', quality);
+    }
     if (webp == null || webp.isEmpty || webp.length > maxPhotoBytes) {
       return null;
     }
@@ -123,7 +136,75 @@ Future<Uint8List?> _encodeThumb(Uint8List bytes) async {
   }
 }
 
+bool get _useNativeEncoder => Platform.isIOS || Platform.isAndroid;
+
 Future<Uint8List?> _toWebp(
+  Uint8List bytes,
+  String extension,
+  int quality, {
+  int? longest,
+}) async {
+  if (_useNativeEncoder) {
+    return _nativeWebp(bytes, quality: quality, longest: longest);
+  }
+  return _cliWebp(bytes, extension, quality);
+}
+
+Future<Uint8List?> _nativeWebp(
+  Uint8List bytes, {
+  required int quality,
+  int? longest,
+}) async {
+  try {
+    final size = await _size(bytes);
+    final target = _targetSize(size, longest);
+    final webp = await FlutterImageCompress.compressWithList(
+      bytes,
+      minWidth: target.width,
+      minHeight: target.height,
+      quality: quality,
+      format: CompressFormat.webp,
+    );
+    return webp.isEmpty ? null : webp;
+  } catch (_) {
+    return null;
+  }
+}
+
+({int width, int height}) _targetSize(
+  ({int width, int height})? size,
+  int? longest,
+) {
+  if (size == null) {
+    final edge = longest ?? 8192;
+    return (width: edge, height: edge);
+  }
+  if (longest == null || math.max(size.width, size.height) <= longest) {
+    return size;
+  }
+  final scale = longest / math.max(size.width, size.height);
+  return (
+    width: math.max(1, (size.width * scale).round()),
+    height: math.max(1, (size.height * scale).round()),
+  );
+}
+
+Future<({int width, int height})?> _size(Uint8List bytes) async {
+  final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+  ui.ImageDescriptor? descriptor;
+  try {
+    descriptor = await ui.ImageDescriptor.encoded(buffer);
+    if (descriptor.width < 1 || descriptor.height < 1) return null;
+    return (width: descriptor.width, height: descriptor.height);
+  } catch (_) {
+    return null;
+  } finally {
+    descriptor?.dispose();
+    buffer.dispose();
+  }
+}
+
+Future<Uint8List?> _cliWebp(
   Uint8List bytes,
   String extension,
   int quality,
