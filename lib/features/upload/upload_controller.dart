@@ -1,19 +1,20 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mime/mime.dart';
 
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
+import 'location/upload_coordinates.dart';
+import 'location/upload_device_location.dart';
+import 'location/upload_place.dart';
 import 'photo/upload_exif.dart';
-import 'photo/upload_webp.dart';
+import 'photo/upload_photo_intake.dart';
 import 'upload_model.dart';
 import 'upload_repository.dart';
+import 'upload_submit.dart';
 
 class UploadController extends ChangeNotifier {
   UploadController({
@@ -158,33 +159,14 @@ class UploadController extends ChangeNotifier {
     benchmarkResult = null;
     error = null;
     _notify();
-    final pending = List<UploadPhoto>.of(photos);
-    final watch = Stopwatch()..start();
     try {
-      for (var i = 0; i < pending.length; i++) {
-        final photo = pending[i];
-        final step = Stopwatch()..start();
-        await prepareUploadPhoto(
-          sourcePath: photo.path,
-          mimeType: photo.mimeType,
-          userId: 'benchmark',
-          postFolder: '00000000-0000-4000-8000-000000000000',
-          index: i,
-        );
-        step.stop();
-        debugPrint(
-          'webp photo ${i + 1}/${pending.length}: ${step.elapsedMilliseconds} ms',
-        );
+      final result = await benchmarkPhotoConversions(photos);
+      if (result.error != null) {
+        error = result.error;
+        benchmarkResult = 'Conversion failed';
+      } else {
+        benchmarkResult = result.summary;
       }
-      watch.stop();
-      final seconds = (watch.elapsedMilliseconds / 1000).toStringAsFixed(2);
-      benchmarkResult = '${pending.length} photos in $seconds s';
-      debugPrint('webp total: $benchmarkResult');
-    } on FumoClientError catch (error) {
-      this.error = error.message;
-      benchmarkResult = 'Conversion failed';
-    } catch (_) {
-      benchmarkResult = 'Conversion failed';
     } finally {
       benchmarking = false;
       _notify();
@@ -194,44 +176,18 @@ class UploadController extends ChangeNotifier {
   Future<void> addPicked(List<XFile> files) async {
     if (files.isEmpty || uploading || benchmarking) return;
     error = null;
-    final accepted = <UploadPhoto>[];
-    var rejectedType = false;
-    var rejectedSize = false;
-    for (final file in files) {
-      if (photos.length + accepted.length >= maxPostPhotos) {
-        error = 'You can add up to $maxPostPhotos photos.';
-        break;
-      }
-      final type = lookupMimeType(file.path) ?? file.mimeType;
-      if (type == null || !uploadImageContentTypes.contains(type)) {
-        rejectedType = true;
-        continue;
-      }
-      final length = await File(file.path).length();
-      if (length < 1 || length > maxPhotoBytes) {
-        rejectedSize = true;
-        continue;
-      }
-      accepted.add(
-        UploadPhoto(
-          id: '${++_photoSeq}',
-          name: file.name,
-          path: file.path,
-          mimeType: file.mimeType,
-        ),
-      );
-    }
-    if (rejectedType) {
-      error = 'Use a JPEG, PNG, WebP, GIF, or AVIF photo.';
-    } else if (rejectedSize) {
-      error = 'Photo is larger than 25 MB.';
-    }
-    if (accepted.isEmpty) {
+    final result = await intakePickedPhotos(
+      files: files,
+      currentCount: photos.length,
+      nextId: () => ++_photoSeq,
+    );
+    error = result.error;
+    if (result.accepted.isEmpty) {
       _notify();
       return;
     }
     final wasEmpty = photos.isEmpty;
-    photos = [...photos, ...accepted];
+    photos = [...photos, ...result.accepted];
     _notify();
     if (wasEmpty && (exactLocation == null || capturedAt == null)) {
       await fillFromPhoto(overwrite: false);
@@ -271,31 +227,14 @@ class UploadController extends ChangeNotifier {
     error = null;
     _notify();
     try {
-      final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) {
-        error = 'Turn on location services to use your device location.';
-        return;
+      final result = await readDeviceLatLng();
+      if (result.location != null) {
+        await _applyExact(result.location!.lat, result.location!.lng);
+      } else {
+        error = result.error;
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        error = 'Location permission is required.';
-        return;
-      }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
-      await _applyExact(position.latitude, position.longitude);
     } on FumoClientError catch (error) {
       this.error = error.message;
-    } catch (_) {
-      error = 'Could not read the device location.';
     } finally {
       locating = false;
       _notify();
@@ -361,7 +300,7 @@ class UploadController extends ChangeNotifier {
   void selectPlace(UploadGeocode result) {
     searchQuery = result.displayName;
     searchResults = const [];
-    _setPlace(result, overwritePlace: true);
+    _applyPlace(result, overwritePlace: true);
     exactLocation = UploadLatLng(lat: result.lat, lng: result.lng);
     latitudeText = formatCoordinate(result.lat);
     longitudeText = formatCoordinate(result.lng);
@@ -370,31 +309,19 @@ class UploadController extends ChangeNotifier {
   }
 
   Future<bool> applyCoordinates({bool lookup = true}) async {
-    final latitudeValue = latitudeText.trim();
-    final longitudeValue = longitudeText.trim();
-    if (latitudeValue.isEmpty && longitudeValue.isEmpty) {
+    final parsed = parseCoordinatePair(latitudeText, longitudeText);
+    if (!parsed.isValid) {
+      coordinateError = parsed.error;
+      _notify();
+      return false;
+    }
+    if (parsed.cleared) {
       exactLocation = null;
       coordinateError = null;
       _notify();
       return true;
     }
-    if (latitudeValue.isEmpty || longitudeValue.isEmpty) {
-      coordinateError = 'Enter both latitude and longitude.';
-      _notify();
-      return false;
-    }
-    final latitude = _parseCoordinate(latitudeValue, min: -90, max: 90);
-    final longitude = _parseCoordinate(longitudeValue, min: -180, max: 180);
-    if (latitude == null) {
-      coordinateError = 'Latitude must be between -90 and 90.';
-      _notify();
-      return false;
-    }
-    if (longitude == null) {
-      coordinateError = 'Longitude must be between -180 and 180.';
-      _notify();
-      return false;
-    }
+    final location = parsed.location!;
     coordinateError = null;
     final current = exactLocation;
     if (current != null &&
@@ -403,9 +330,9 @@ class UploadController extends ChangeNotifier {
       _notify();
       return true;
     }
-    exactLocation = UploadLatLng(lat: latitude, lng: longitude);
-    latitudeText = formatCoordinate(latitude);
-    longitudeText = formatCoordinate(longitude);
+    exactLocation = location;
+    latitudeText = formatCoordinate(location.lat);
+    longitudeText = formatCoordinate(location.lng);
     _notify();
     if (lookup) await _reverse(exactLocation!);
     return true;
@@ -460,59 +387,34 @@ class UploadController extends ChangeNotifier {
     _progressDone = 0;
     _progressTotal = photos.length * 2;
     _notify();
-    final postFolder = newUploadId();
-    final attempted = <String>[];
     try {
-      final prepared = <PreparedPhoto>[];
-      for (var index = 0; index < photos.length; index++) {
-        final photo = photos[index];
-        prepared.add(
-          await prepareUploadPhoto(
-            sourcePath: photo.path,
-            mimeType: photo.mimeType,
-            userId: userId,
-            postFolder: postFolder,
-            index: index,
-            onStep: () {
-              _progressDone += 1;
-              _notify();
-            },
-          ),
-        );
-      }
-      final blobs = [for (final photo in prepared) ...photo.blobs];
-      progressLabel = 'Uploading';
-      _progressTotal = _progressDone + blobs.length + 1;
-      _notify();
-      await _repository.uploadBlobs(
-        blobs,
-        onUploaded: (path) {
-          attempted.add(path);
-          _progressDone += 1;
+      await submitUpload(
+        repository: _repository,
+        input: UploadSubmitInput(
+          userId: userId,
+          title: trimmedTitle,
+          body: trimmedBody,
+          photos: photos,
+          capturedAt: capturedAt,
+          location: location,
+          placeName: placeName.trim(),
+          countryName: countryName,
+          regionName: regionName,
+          cityName: cityName,
+          characterIds: characterIds,
+        ),
+        onProgress: (progress) {
+          progressLabel = progress.label;
+          _progressDone = progress.done;
+          _progressTotal = progress.total;
           _notify();
         },
       );
-      await _repository.createPost(
-        title: trimmedTitle,
-        body: trimmedBody.isEmpty ? null : trimmedBody,
-        photos: prepared,
-        capturedAt: capturedAt,
-        location: location,
-        placeName: placeName.trim(),
-        countryName: countryName,
-        regionName: regionName,
-        cityName: cityName,
-        characterIds: characterIds,
-      );
-      _progressDone += 1;
-      _notify();
       return true;
     } on FumoClientError catch (error) {
-      await _cleanup(attempted);
       this.error = error.message;
       return false;
     } catch (_) {
-      await _cleanup(attempted);
       error = 'Could not submit the spot.';
       return false;
     } finally {
@@ -544,7 +446,7 @@ class UploadController extends ChangeNotifier {
           current.lng != location.lng) {
         return;
       }
-      _setPlace(result, overwritePlace: false);
+      _applyPlace(result, overwritePlace: false);
     } catch (_) {
       // Place names are a convenience and should not block the location.
     } finally {
@@ -553,38 +455,18 @@ class UploadController extends ChangeNotifier {
     }
   }
 
-  void _setPlace(UploadGeocode result, {required bool overwritePlace}) {
-    countryName = result.countryName;
-    regionName = result.regionName;
-    cityName = result.cityName;
-    final next = result.placeName.trim();
-    final current = placeName.trim();
-    if (overwritePlace ||
-        current.isEmpty ||
-        (lastAutoPlaceName != null && current == lastAutoPlaceName)) {
-      placeName = next;
-      lastAutoPlaceName = next.isEmpty ? null : next;
-    }
-  }
-
-  double? _parseCoordinate(
-    String value, {
-    required double min,
-    required double max,
-  }) {
-    if (!RegExp(r'^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$').hasMatch(value)) {
-      return null;
-    }
-    final parsed = double.tryParse(value);
-    if (parsed == null || parsed < min || parsed > max) return null;
-    return parsed;
-  }
-
-  Future<void> _cleanup(List<String> paths) async {
-    if (paths.isEmpty) return;
-    try {
-      await _repository.deleteUploads(paths);
-    } catch (_) {}
+  void _applyPlace(UploadGeocode result, {required bool overwritePlace}) {
+    final fields = applyGeocodePlace(
+      result: result,
+      currentPlaceName: placeName,
+      lastAutoPlaceName: lastAutoPlaceName,
+      overwritePlace: overwritePlace,
+    );
+    placeName = fields.placeName;
+    lastAutoPlaceName = fields.lastAutoPlaceName;
+    countryName = fields.countryName;
+    regionName = fields.regionName;
+    cityName = fields.cityName;
   }
 
   void _notify() {
