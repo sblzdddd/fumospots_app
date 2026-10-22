@@ -353,7 +353,7 @@ class _SpotMapViewState extends State<SpotMapView> {
           },
         ),
         Positioned(
-          top: widget.contentInsetTop + 20,
+          top: widget.contentInsetTop,
           left: 12,
           right: 12,
           child: Column(
