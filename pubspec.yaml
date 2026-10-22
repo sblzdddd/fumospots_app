@@ -51,6 +51,10 @@ dependencies:
   motor: ^1.1.0
   webview_flutter: ^4.14.1
   crypto: ^3.0.7
+  image_picker: ^1.2.4
+  exif: ^3.3.0
+  image_to_webp: ^1.0.0
+  geolocator: ^14.1.2
 
 dev_dependencies:
   flutter_test:
