@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_staggered_grid/flutter_staggered_grid.dart';
 import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
@@ -44,6 +45,7 @@ class _PostFeedViewState extends State<PostFeedView> {
   bool _indicatorArmed = false;
   bool _refreshFromIndicator = false;
   bool _filterPinned = false;
+  List<String>? _pendingFilterSlugs;
 
   @override
   void initState() {
@@ -55,7 +57,7 @@ class _PostFeedViewState extends State<PostFeedView> {
     _scrollController.addListener(_onScroll);
     _stats.load();
     _catalog.load();
-    _syncCharacterFilter();
+    _applyCharacterFilter();
     if (_controller.posts.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -78,13 +80,32 @@ class _PostFeedViewState extends State<PostFeedView> {
   }
 
   void _onFilterChanged() {
-    _syncCharacterFilter();
+    final slugs = resolveCharacterFilterSlugs(
+      filter: _filter,
+      catalog: _catalog,
+    );
+    if (slugs == null || listEquals(_controller.characterSlugs, slugs)) {
+      if (mounted) {
+        setState(() {});
+      }
+      return;
+    }
+
+    // Defer the reload to the pull indicator so the header stays open for the
+    // whole request (starting it earlier can finish before the header opens).
+    _scrollToTop();
+    if (_showLoadingIndicator()) {
+      _pendingFilterSlugs = slugs;
+    } else {
+      _pendingFilterSlugs = null;
+      _controller.applyCharacterSlugs(slugs);
+    }
     if (mounted) {
       setState(() {});
     }
   }
 
-  void _syncCharacterFilter() {
+  void _applyCharacterFilter() {
     final slugs = resolveCharacterFilterSlugs(
       filter: _filter,
       catalog: _catalog,
@@ -95,19 +116,36 @@ class _PostFeedViewState extends State<PostFeedView> {
     _controller.applyCharacterSlugs(slugs);
   }
 
+  void _scrollToTop() {
+    _filterPinned = false;
+    if (_scrollController.hasClients && _scrollController.offset > 0) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  /// Returns false when the indicator could not be armed (already busy).
+  bool _showLoadingIndicator() {
+    if (_indicatorArmed ||
+        _refreshFromIndicator ||
+        _refreshController.isRefreshing) {
+      return false;
+    }
+    _indicatorArmed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _indicatorArmed = false;
+        return;
+      }
+      await _refreshController.refresh();
+      _indicatorArmed = false;
+    });
+    return true;
+  }
+
   void _onChanged() {
     if (_controller.showingSkeletons) {
-      if (_scrollController.hasClients && _scrollController.offset > 0) {
-        _scrollController.jumpTo(0);
-      }
-      _filterPinned = false;
-      if (!_indicatorArmed && !_refreshFromIndicator) {
-        _indicatorArmed = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await _refreshController.refresh();
-          _indicatorArmed = false;
-        });
-      }
+      _scrollToTop();
+      _showLoadingIndicator();
     }
     if (mounted) {
       setState(() {});
@@ -134,6 +172,12 @@ class _PostFeedViewState extends State<PostFeedView> {
   Future<void> _onRefresh() async {
     _refreshFromIndicator = true;
     try {
+      final filterSlugs = _pendingFilterSlugs;
+      if (filterSlugs != null) {
+        _pendingFilterSlugs = null;
+        await _controller.applyCharacterSlugs(filterSlugs);
+        return;
+      }
       await Future.wait([
         _controller.refresh(),
         _stats.refresh(),
