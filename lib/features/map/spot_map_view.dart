@@ -349,6 +349,12 @@ class _SpotMapViewState extends State<SpotMapView> {
                   ),
                 ],
               ],
+              children: <Widget>[
+                MapScalebar(),
+                SourceAttribution(),
+                MapControlButtons(showTrackLocation: true),
+                MapCompass(),
+              ],
             );
           },
         ),
