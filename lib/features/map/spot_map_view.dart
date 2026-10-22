@@ -1,11 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
+import 'package:m3e_core/m3e_core.dart';
 import 'package:maplibre/maplibre.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../character/character_catalog_controller.dart';
+import '../character/character_filter_bar.dart';
+import '../character/character_filter_controller.dart';
+import '../character/character_filter_sync.dart';
+import '../post/post_detail_sheet.dart';
 import 'map_click.dart';
 import 'map_feature_factory.dart';
 import 'map_locate.dart';
@@ -32,6 +39,10 @@ class SpotMapView extends StatefulWidget {
 
 class _SpotMapViewState extends State<SpotMapView> {
   final MapPointsController _points = GetIt.instance<MapPointsController>();
+  final CharacterFilterController _filter =
+      GetIt.instance<CharacterFilterController>();
+  final CharacterCatalogController _catalog =
+      GetIt.instance<CharacterCatalogController>();
   final MapLocate _locate = MapLocate();
   final MapPreviewAnnotations _previews = MapPreviewAnnotations();
 
@@ -53,7 +64,11 @@ class _SpotMapViewState extends State<SpotMapView> {
   void initState() {
     super.initState();
     _points.addListener(_onPointsChanged);
+    _filter.addListener(_onFilterChanged);
+    _catalog.addListener(_onFilterChanged);
     _circleFeatures = mapPointFeatures(_points.points);
+    _catalog.load();
+    _syncCharacterFilter();
     _points.load();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
@@ -67,8 +82,28 @@ class _SpotMapViewState extends State<SpotMapView> {
   void dispose() {
     _styleRecovery?.cancel();
     _points.removeListener(_onPointsChanged);
+    _filter.removeListener(_onFilterChanged);
+    _catalog.removeListener(_onFilterChanged);
     _previews.dispose();
     super.dispose();
+  }
+
+  void _onFilterChanged() {
+    _syncCharacterFilter();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _syncCharacterFilter() {
+    final slugs = resolveCharacterFilterSlugs(
+      filter: _filter,
+      catalog: _catalog,
+    );
+    if (slugs == null) {
+      return;
+    }
+    unawaited(_points.applyCharacterSlugs(slugs));
   }
 
   void _armStyleRecovery() {
@@ -145,12 +180,17 @@ class _SpotMapViewState extends State<SpotMapView> {
       if (_zoom >= mapPreviewMinZoom) MapPreviewAnnotations.layerId,
     ];
 
+    final padding = MediaQuery.paddingOf(context);
     handleMapPostClick(
       map: map,
       screenPoint: event.screenPoint,
       layerIds: layerIds,
       points: _points.points,
       onOpenPost: widget.onOpenPost,
+      mapSize: _mapSize,
+      topInset: padding.top,
+      bottomInset: padding.bottom,
+      sheetFraction: postDetailSheetInitialSize,
     );
   }
 
@@ -181,6 +221,26 @@ class _SpotMapViewState extends State<SpotMapView> {
     }
   }
 
+  Widget _locateFab(double bottom) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: M3EFab(
+        color: M3EFabColor.secondary,
+        tooltip: 'My location',
+        onPressed: _locating ? null : _goToMyLocation,
+        icon: _locating
+            ? SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              )
+            : const FaIcon(FontAwesomeIcons.locationCrosshairs),
+      ),
+    );
+  }
+
   @override
   void didUpdateWidget(covariant SpotMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -196,6 +256,7 @@ class _SpotMapViewState extends State<SpotMapView> {
     final styleUrl = hostedMapStyleUrl(dark: brightness == Brightness.dark);
     final selectedId = widget.selectedPostId;
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final barHeight = BottomBarScope.maybeOf(context)?.barHeight;
 
     return Stack(
       fit: StackFit.expand,
@@ -292,36 +353,38 @@ class _SpotMapViewState extends State<SpotMapView> {
           },
         ),
         Positioned(
-          top: widget.contentInsetTop + 16,
-          left: 16,
-          right: 16,
-          child: MapStatusBanner(
-            loading: _points.loading && _points.points.isEmpty,
-            empty:
-                !_points.loading &&
-                _points.error == null &&
-                _points.points.isEmpty,
-            error: _points.error,
-            onRetry: _points.retry,
+          top: widget.contentInsetTop + 20,
+          left: 12,
+          right: 12,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const CharacterFilterBar(floating: true),
+              const SizedBox(height: 8),
+              MapStatusBanner(
+                loading: _points.loading && _points.points.isEmpty,
+                empty:
+                    !_points.loading &&
+                    _points.error == null &&
+                    _points.points.isEmpty,
+                error: _points.error,
+                onRetry: _points.retry,
+              ),
+            ],
           ),
         ),
         Positioned(
-          right: 16,
-          bottom: bottomPad + 16,
-          child: FloatingActionButton.small(
-            heroTag: 'map-locate',
-            tooltip: 'My location',
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-            onPressed: _locating ? null : _goToMyLocation,
-            child: _locating
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const FaIcon(FontAwesomeIcons.locationCrosshairs, size: 16),
-          ),
+          right: 32,
+          bottom: 0,
+          child: barHeight == null
+              ? _locateFab(bottomPad)
+              : ValueListenableBuilder<double>(
+                  valueListenable: barHeight,
+                  builder: (context, value, _) {
+                    final clearance = value > bottomPad ? value : bottomPad;
+                    return _locateFab(clearance);
+                  },
+                ),
         ),
       ],
     );

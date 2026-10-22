@@ -35,3 +35,13 @@ class MapPreviewItem {
   final String title;
   final String? thumbUrl;
 }
+
+class MapCount {
+  const MapCount({
+    required this.postCount,
+    required this.contributorCount,
+  });
+
+  final int postCount;
+  final int contributorCount;
+}

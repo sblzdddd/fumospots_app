@@ -14,13 +14,14 @@ class MapPointsController extends ChangeNotifier {
   final MapRepository _repository;
 
   List<MapPoint> points = const [];
+  List<String> characterSlugs = const [];
   bool loading = true;
   String? error;
   bool _disposed = false;
   Future<void>? _inFlight;
 
-  Future<void> load() {
-    if (points.isNotEmpty && !loading && error == null) {
+  Future<void> load({bool force = false}) {
+    if (!force && points.isNotEmpty && !loading && error == null) {
       return Future.value();
     }
     return _inFlight ??= _loadAll().whenComplete(() {
@@ -33,13 +34,30 @@ class MapPointsController extends ChangeNotifier {
     error = null;
     loading = true;
     _notify();
-    return load();
+    return load(force: true);
+  }
+
+  /// Reload map points for the given character slug filter (OR match).
+  Future<void> applyCharacterSlugs(List<String> slugs) {
+    final next = List<String>.unmodifiable(slugs);
+    if (listEquals(characterSlugs, next) && (points.isNotEmpty || loading)) {
+      return _inFlight ?? Future.value();
+    }
+    characterSlugs = next;
+    points = const [];
+    error = null;
+    loading = true;
+    _notify();
+    _inFlight = null;
+    return load(force: true);
   }
 
   Future<void> _loadAll() async {
     loading = true;
     error = null;
     _notify();
+
+    final slugs = characterSlugs;
 
     try {
       final all = <MapPoint>[];
@@ -50,7 +68,11 @@ class MapPointsController extends ChangeNotifier {
         final result = await _repository.fetchPointPage(
           afterId,
           throughId: throughId,
+          characterSlugs: slugs,
         );
+        if (_disposed || !listEquals(characterSlugs, slugs)) {
+          return;
+        }
         all.addAll(result.points);
         throughId ??= result.throughId;
         if (result.nextAfterId == null) {
@@ -66,10 +88,16 @@ class MapPointsController extends ChangeNotifier {
       }
       throw const FumoClientError('Map has too many pages.');
     } on FumoClientError catch (e) {
+      if (_disposed || !listEquals(characterSlugs, slugs)) {
+        return;
+      }
       error = e.message;
       loading = false;
       _notify();
     } catch (_) {
+      if (_disposed || !listEquals(characterSlugs, slugs)) {
+        return;
+      }
       error = "Couldn't load map spots.";
       loading = false;
       _notify();

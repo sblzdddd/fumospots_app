@@ -10,16 +10,38 @@ class MapRepository {
 
   static const maxPreviewIds = 100;
 
-  Future<MapPointPage> fetchPointPage(int afterId, {int? throughId}) async {
+  Future<MapPointPage> fetchPointPage(
+    int afterId, {
+    int? throughId,
+    List<String> characterSlugs = const [],
+  }) async {
     final response = await _client.get(
       '/api/map/posts',
       queryParameters: {
         'afterId': afterId,
         'throughId': ?throughId,
+        if (characterSlugs.isNotEmpty) 'characters': characterSlugs.join(','),
       },
       fallback: "Couldn't load map spots.",
     );
     return _pageFromJson(toJsonMap(response.data));
+  }
+
+  Future<MapCount> fetchCount() async {
+    final response = await _client.get(
+      '/api/map/count',
+      fallback: "Couldn't load stats.",
+    );
+    final json = toJsonMap(response.data);
+    final postCount = _asNonNegativeInt(json['count']);
+    final contributorCount = _asNonNegativeInt(json['registeredUserCount']);
+    if (postCount == null || contributorCount == null) {
+      throw const FumoClientError("Couldn't load stats.");
+    }
+    return MapCount(
+      postCount: postCount,
+      contributorCount: contributorCount,
+    );
   }
 
   Future<List<MapPreviewItem>> fetchPreviews(List<int> ids) async {

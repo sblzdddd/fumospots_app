@@ -3,6 +3,9 @@
 import '../../features/auth/auth_controller.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/auth_session_store.dart';
+import '../../features/character/character_catalog_controller.dart';
+import '../../features/character/character_filter_controller.dart';
+import '../../features/character/character_repository.dart';
 import '../../features/map/map_points_controller.dart';
 import '../../features/map/map_preview_controller.dart';
 import '../../features/map/map_repository.dart';
@@ -75,6 +78,26 @@ void setupDI() {
     final interceptor = FumoAuthInterceptor();
     getIt.registerSingleton<FumoAuthInterceptor>(interceptor);
     getIt<FumoClient>().postInitialize(interceptor);
+  }
+
+  // Characters
+
+  if (!getIt.isRegistered<CharacterRepository>()) {
+    getIt.registerLazySingleton<CharacterRepository>(
+      () => CharacterRepository(client: getIt<FumoClient>()),
+    );
+  }
+
+  if (!getIt.isRegistered<CharacterCatalogController>()) {
+    getIt.registerLazySingleton<CharacterCatalogController>(
+      CharacterCatalogController.new,
+    );
+  }
+
+  if (!getIt.isRegistered<CharacterFilterController>()) {
+    getIt.registerLazySingleton<CharacterFilterController>(
+      CharacterFilterController.new,
+    );
   }
 
   // Posts
