@@ -274,7 +274,7 @@ class MapPreviewAnnotations {
         return false;
       }
       _pinPngById[id] = png;
-      return _uploadCachedPin(id);
+      return await _uploadCachedPin(id);
     } catch (_) {
       return false;
     } finally {
