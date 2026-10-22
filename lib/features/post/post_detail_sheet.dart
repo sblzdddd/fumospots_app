@@ -10,6 +10,9 @@ import 'post_format.dart';
 import 'post_model.dart';
 import 'post_photos.dart';
 
+/// Fraction of the safe area the post sheet covers when it first opens.
+const postDetailSheetInitialSize = 0.75;
+
 Future<void> showPostDetailSheet(BuildContext context, int postId) {
   final previewThumbUrl = resolvePostPreviewThumb(postId);
   return showModalBottomSheet<void>(
@@ -21,7 +24,7 @@ Future<void> showPostDetailSheet(BuildContext context, int postId) {
     builder: (context) {
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.75,
+        initialChildSize: postDetailSheetInitialSize,
         minChildSize: 0.6,
         maxChildSize: 0.92,
         shouldCloseOnMinExtent: true,
