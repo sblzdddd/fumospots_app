@@ -12,20 +12,7 @@ Widget wrapFeedRefresh({
     controller: controller,
     onRefresh: onRefresh,
     edgeOffset: contentInsetTop,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final height = constraints.maxHeight + contentInsetTop;
-        return OverflowBox(
-          alignment: Alignment.topCenter,
-          minHeight: height,
-          maxHeight: height,
-          child: Transform.translate(
-            offset: Offset(0, -contentInsetTop),
-            child: SizedBox(height: height, child: child),
-          ),
-        );
-      },
-    ),
+    child: child,
   );
 }
 

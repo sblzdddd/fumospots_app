@@ -149,7 +149,8 @@ class _PostFeedViewState extends State<PostFeedView> {
     return KeyedSubtree(
       key: _statsKey,
       child: PostFeedStatsHeader(
-        topInset: widget.contentInsetTop,
+        // Safe-area inset is reserved by [wrapFeedRefresh] edgeOffset.
+        topInset: 0,
         loading: _stats.showingSkeletons,
         failed: _stats.showingError,
         postCount: _stats.postCount,
