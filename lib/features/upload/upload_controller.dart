@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
@@ -201,7 +202,8 @@ class UploadController extends ChangeNotifier {
         error = 'You can add up to $maxPostPhotos photos.';
         break;
       }
-      if (contentTypeFor(file.path, file.mimeType) == null) {
+      final type = lookupMimeType(file.path) ?? file.mimeType;
+      if (type == null || !uploadImageContentTypes.contains(type)) {
         rejectedType = true;
         continue;
       }

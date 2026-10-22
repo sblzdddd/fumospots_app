@@ -1,12 +1,11 @@
 import 'dart:io';
 
+import 'package:mime/mime.dart';
+
 import '../../../core/services/fumo_client_error.dart';
 import '../upload_model.dart';
-import 'upload_content_type.dart';
 import 'upload_webp_encode.dart';
 import 'upload_webp_util.dart';
-
-export 'upload_content_type.dart' show contentTypeFor;
 
 Future<PreparedPhoto> prepareUploadPhoto({
   required String sourcePath,
@@ -17,8 +16,8 @@ Future<PreparedPhoto> prepareUploadPhoto({
   void Function()? onStep,
 }) async {
   final bytes = await File(sourcePath).readAsBytes();
-  final type = contentTypeFor(sourcePath, mimeType);
-  if (type == null) {
+  final type = lookupMimeType(sourcePath) ?? mimeType;
+  if (type == null || !uploadImageContentTypes.contains(type)) {
     throw const FumoClientError('Use a JPEG, PNG, WebP, GIF, or AVIF photo.');
   }
   assertPhotoSize(bytes);

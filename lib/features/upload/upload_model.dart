@@ -6,6 +6,16 @@ const maxPhotoBytes = 25 * 1024 * 1024;
 const maxTitleLength = 80;
 const maxBodyLength = 1000;
 
+const uploadImageContentTypes = {
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+};
+
 class UploadLatLng {
   const UploadLatLng({required this.lat, required this.lng});
 

@@ -1,9 +1,10 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:mime/mime.dart';
+
 import '../../../core/services/fumo_client_error.dart';
 import '../upload_model.dart';
-import 'upload_content_type.dart';
 import 'upload_image_codec.dart';
 import 'upload_webp_convert.dart';
 import 'upload_webp_util.dart';
@@ -13,6 +14,7 @@ Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
   String type,
 ) async {
   final watch = Stopwatch()..start();
+  final ext = extensionFromMime(type) ?? 'bin';
   if (type == 'image/webp' || type == 'image/gif' || type == 'image/avif') {
     logWebpConversion(
       'original',
@@ -21,12 +23,12 @@ Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
       'skipped',
       watch.elapsed,
     );
-    return (bytes: bytes, type: type, ext: extForContentType(type));
+    return (bytes: bytes, type: type, ext: ext);
   }
   if (type == 'image/jpeg' || type == 'image/png') {
     final webp = await convertToWebp(
       bytes,
-      '.${extForContentType(type)}',
+      '.$ext',
       webpQualityFor(bytes.length),
       longest: originalLongest,
     );
@@ -48,7 +50,7 @@ Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
       webp == null ? 'failed' : 'kept',
       watch.elapsed,
     );
-    return (bytes: bytes, type: type, ext: extForContentType(type));
+    return (bytes: bytes, type: type, ext: ext);
   }
   final direct = await convertToWebp(
     bytes,
