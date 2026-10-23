@@ -100,8 +100,7 @@ class _PostCardState extends State<PostCard> {
     final showImage = widget.post.thumbUrl != null && !_failed;
     final onEdit = widget.onEdit;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Stack(
       children: [
         M3ESegmentedItem(
           index: 0,
@@ -151,7 +150,12 @@ class _PostCardState extends State<PostCard> {
                           ),
                         ),
                       if (widget.badge != null)
-                        Positioned(top: 8, left: 8, right: 8, child: widget.badge!),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          right: onEdit != null ? 44 : 8,
+                          child: widget.badge!,
+                        ),
                     ],
                   ),
                 ),
@@ -186,15 +190,30 @@ class _PostCardState extends State<PostCard> {
           ),
         ),
         if (onEdit != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              onPressed: onEdit,
-              tooltip: 'Edit post',
-              icon: FaIcon(
-                FontAwesomeIcons.penToSquare,
-                size: 14,
-                color: colors.onSurfaceVariant,
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Material(
+              color: colors.surface.withValues(alpha: 0.92),
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onEdit,
+                customBorder: const CircleBorder(),
+                child: Tooltip(
+                  message: 'Edit post',
+                  child: SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Center(
+                      child: FaIcon(
+                        FontAwesomeIcons.penToSquare,
+                        size: 13,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
