@@ -16,6 +16,7 @@ import '../../features/upload/upload_controller.dart';
 import '../../features/upload/upload_repository.dart';
 import '../../features/settings/theme_controller.dart';
 import '../../features/settings/visual_settings_controller.dart';
+import '../../features/user/user_repository.dart';
 import '../config/fumospots_config.dart';
 import '../services/fumo_client.dart';
 import '../services/fumo_store.dart';
@@ -127,6 +128,14 @@ void setupDI() {
 
   if (!getIt.isRegistered<UploadController>()) {
     getIt.registerFactory<UploadController>(UploadController.new);
+  }
+
+  // User
+
+  if (!getIt.isRegistered<UserRepository>()) {
+    getIt.registerLazySingleton<UserRepository>(
+      () => UserRepository(client: getIt<FumoClient>()),
+    );
   }
 
   // Map
