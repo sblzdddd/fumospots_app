@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -153,14 +154,7 @@ class _PhotoTile extends StatelessWidget {
                 children: [
                   ColoredBox(
                     color: colors.surfaceContainerHigh,
-                    child: Image.file(
-                      File(photo.path),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(
-                        Icons.image_outlined,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
+                    child: _photoPreview(photo, colors),
                   ),
                   Positioned(
                     left: 6,
@@ -212,6 +206,33 @@ class _PhotoTile extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _photoPreview(UploadPhoto photo, ColorScheme colors) {
+    final previewUrl = photo.previewUrl;
+    if (previewUrl != null && previewUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: previewUrl,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        errorWidget: (_, _, _) => Icon(
+          Icons.image_outlined,
+          color: colors.onSurfaceVariant,
+        ),
+      );
+    }
+    if (photo.path.isEmpty) {
+      return Icon(Icons.image_outlined, color: colors.onSurfaceVariant);
+    }
+    return Image.file(
+      File(photo.path),
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Icon(
+        Icons.image_outlined,
+        color: colors.onSurfaceVariant,
       ),
     );
   }

@@ -74,6 +74,14 @@ class UploadRepository {
     if (error != null) throw error;
   }
 
+  Future<EditablePostDetail> fetchEditablePost(int postId) async {
+    final response = await _client.get(
+      '/api/posts/$postId/edit',
+      fallback: 'Could not load this spot for editing.',
+    );
+    return EditablePostDetail.fromJson(toJsonMap(response.data));
+  }
+
   Future<void> createPost({
     required String title,
     required String? body,
@@ -88,25 +96,51 @@ class UploadRepository {
   }) async {
     await _client.post(
       '/api/posts',
-      data: {
-        'title': title,
-        'body': body,
-        'photos': [
-          for (final photo in photos)
-            {'imagePath': photo.imagePath, 'thumbPath': photo.thumbPath},
-        ],
-        'capturedAt': capturedAt?.toUtc().toIso8601String(),
-        'exactLocation': location.toJson(),
-        'publicLocation': location.toJson(),
-        'privacyMode': 'exact',
-        'placeName': placeName,
-        'countryName': countryName,
-        'regionName': regionName,
-        'cityName': cityName,
-        'characterIds': characterIds,
-      },
+      data: _postPayload(
+        title: title,
+        body: body,
+        photos: photos,
+        capturedAt: capturedAt,
+        location: location,
+        placeName: placeName,
+        countryName: countryName,
+        regionName: regionName,
+        cityName: cityName,
+        characterIds: characterIds,
+      ),
       fallback: 'Could not submit the spot.',
     );
+  }
+
+  Map<String, dynamic> _postPayload({
+    required String title,
+    required String? body,
+    required List<PreparedPhoto> photos,
+    required DateTime? capturedAt,
+    required UploadLatLng location,
+    required String placeName,
+    required String? countryName,
+    required String? regionName,
+    required String? cityName,
+    required List<int> characterIds,
+  }) {
+    return {
+      'title': title,
+      'body': body,
+      'photos': [
+        for (final photo in photos)
+          {'imagePath': photo.imagePath, 'thumbPath': photo.thumbPath},
+      ],
+      'capturedAt': capturedAt?.toUtc().toIso8601String(),
+      'exactLocation': location.toJson(),
+      'publicLocation': location.toJson(),
+      'privacyMode': 'exact',
+      'placeName': placeName,
+      'countryName': countryName,
+      'regionName': regionName,
+      'cityName': cityName,
+      'characterIds': characterIds,
+    };
   }
 
   Future<void> deleteUploads(List<String> paths) async {

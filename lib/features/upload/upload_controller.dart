@@ -49,18 +49,25 @@ class UploadController extends ChangeNotifier {
   bool locating = false;
   bool reverseLookup = false;
   bool uploading = false;
+  bool loadingEdit = false;
   bool benchmarking = false;
   String? benchmarkResult;
   String progressLabel = 'Submitting';
   String? error;
+  int? editPostId;
   int _photoSeq = 0;
   int _progressDone = 0;
   int _progressTotal = 0;
   bool _disposed = false;
   UploadLatLng? exactLocation;
 
+  bool get isEditMode => editPostId != null;
+
   bool get canAddPhoto =>
-      photos.length < maxPostPhotos && !uploading && !benchmarking;
+      photos.length < maxPostPhotos &&
+      !uploading &&
+      !loadingEdit &&
+      !benchmarking;
 
   double? get uploadProgress {
     if (!uploading || _progressTotal == 0) return null;
@@ -69,6 +76,7 @@ class UploadController extends ChangeNotifier {
 
   bool get canSubmit =>
       !uploading &&
+      !loadingEdit &&
       !benchmarking &&
       photos.isNotEmpty &&
       title.trim().isNotEmpty &&
@@ -241,11 +249,75 @@ class UploadController extends ChangeNotifier {
     }
   }
 
+  Future<void> loadForEdit(int postId) async {
+    if (uploading || loadingEdit) return;
+    loadingEdit = true;
+    editPostId = postId;
+    error = null;
+    _notify();
+    try {
+      final detail = await _repository.fetchEditablePost(postId);
+      if (_disposed) return;
+      title = detail.title;
+      body = detail.body ?? '';
+      placeName = detail.placeName;
+      countryName = detail.countryName;
+      regionName = detail.regionName;
+      cityName = detail.cityName;
+      lastAutoPlaceName = null;
+      exactLocation = detail.exactLocation;
+      latitudeText = formatCoordinate(detail.exactLocation.lat);
+      longitudeText = formatCoordinate(detail.exactLocation.lng);
+      coordinateError = null;
+      capturedAt = detail.capturedAt;
+      characterIds = List<int>.unmodifiable(detail.characterIds);
+      searchQuery = '';
+      searchResults = const [];
+      photos = [
+        for (var index = 0; index < detail.photos.length; index++)
+          UploadPhoto(
+            id: 'existing-$index-${detail.photos[index].imagePath}',
+            name: _existingPhotoName(detail.photos[index].imagePath, index),
+            path: '',
+            mimeType: 'image/webp',
+            storageImagePath: detail.photos[index].imagePath,
+            storageThumbPath: detail.photos[index].thumbPath,
+            previewUrl:
+                detail.photos[index].thumbUrl ??
+                detail.photos[index].imageUrl,
+          ),
+      ];
+      _photoSeq = photos.length;
+    } on FumoClientError catch (error) {
+      this.error = error.message;
+    } catch (_) {
+      error = 'Could not load this spot for editing.';
+    } finally {
+      loadingEdit = false;
+      _notify();
+    }
+  }
+
+  String _existingPhotoName(String imagePath, int index) {
+    final slash = imagePath.lastIndexOf('/');
+    if (slash >= 0 && slash < imagePath.length - 1) {
+      return imagePath.substring(slash + 1);
+    }
+    return 'photo-${index + 1}.webp';
+  }
+
   Future<void> fillFromPhoto({required bool overwrite}) async {
     if (uploading || detectingExif) return;
     if (photos.isEmpty) {
       if (overwrite) {
         error = 'Add a photo first.';
+        _notify();
+      }
+      return;
+    }
+    if (photos.first.isExisting) {
+      if (overwrite) {
+        error = 'Existing photos have no local EXIF.';
         _notify();
       }
       return;

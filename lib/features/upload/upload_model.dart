@@ -63,12 +63,118 @@ class UploadPhoto {
     required this.name,
     required this.path,
     required this.mimeType,
+    this.storageImagePath,
+    this.storageThumbPath,
+    this.previewUrl,
   });
 
   final String id;
   final String name;
+
+  /// Local file path for newly picked photos. Empty for existing remote photos.
   final String path;
   final String? mimeType;
+
+  /// Storage object paths when the photo already exists on the server.
+  final String? storageImagePath;
+  final String? storageThumbPath;
+  final String? previewUrl;
+
+  bool get isExisting =>
+      storageImagePath != null && storageImagePath!.isNotEmpty;
+}
+
+class EditablePostPhoto {
+  const EditablePostPhoto({
+    required this.imageUrl,
+    required this.thumbUrl,
+    required this.imagePath,
+    required this.thumbPath,
+  });
+
+  final String? imageUrl;
+  final String? thumbUrl;
+  final String imagePath;
+  final String? thumbPath;
+
+  factory EditablePostPhoto.fromJson(Map<String, dynamic> json) =>
+      EditablePostPhoto(
+        imageUrl: _optionalText(json['imageUrl']),
+        thumbUrl: _optionalText(json['thumbUrl']),
+        imagePath: _text(json['imagePath']),
+        thumbPath: _optionalText(json['thumbPath']),
+      );
+}
+
+class EditablePostDetail {
+  const EditablePostDetail({
+    required this.id,
+    required this.status,
+    required this.hasPendingRevision,
+    required this.title,
+    required this.body,
+    required this.photos,
+    required this.capturedAt,
+    required this.exactLocation,
+    required this.placeName,
+    required this.countryName,
+    required this.regionName,
+    required this.cityName,
+    required this.characterIds,
+  });
+
+  final int id;
+  final String status;
+  final bool hasPendingRevision;
+  final String title;
+  final String? body;
+  final List<EditablePostPhoto> photos;
+  final DateTime? capturedAt;
+  final UploadLatLng exactLocation;
+  final String placeName;
+  final String? countryName;
+  final String? regionName;
+  final String? cityName;
+  final List<int> characterIds;
+
+  factory EditablePostDetail.fromJson(Map<String, dynamic> json) {
+    final exact = json['exactLocation'];
+    final exactMap = exact is Map ? exact : const <String, dynamic>{};
+    final photosRaw = json['photos'];
+    return EditablePostDetail(
+      id: (json['id'] as num).toInt(),
+      status: _text(json['status']),
+      hasPendingRevision: json['hasPendingRevision'] as bool? ?? false,
+      title: _text(json['title']),
+      body: _optionalText(json['body']),
+      photos: [
+        if (photosRaw is List)
+          for (final item in photosRaw)
+            if (item is Map) EditablePostPhoto.fromJson(
+              item.map((key, value) => MapEntry('$key', value)),
+            ),
+      ],
+      capturedAt: _dateTime(json['capturedAt']),
+      exactLocation: UploadLatLng(
+        lat: (exactMap['lat'] as num).toDouble(),
+        lng: (exactMap['lng'] as num).toDouble(),
+      ),
+      placeName: _text(json['placeName']),
+      countryName: _optionalText(json['countryName']),
+      regionName: _optionalText(json['regionName']),
+      cityName: _optionalText(json['cityName']),
+      characterIds: [
+        if (json['characterIds'] is List)
+          for (final id in json['characterIds'] as List)
+            if (id is num) id.toInt(),
+      ],
+    );
+  }
+}
+
+DateTime? _dateTime(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  return DateTime.tryParse(value)?.toLocal();
 }
 
 class UploadBlob {

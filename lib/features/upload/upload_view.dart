@@ -43,6 +43,10 @@ class _UploadViewState extends State<UploadView> {
     _controller.addListener(_sync);
     _latitudeFocus.addListener(_onCoordinateFocus);
     _longitudeFocus.addListener(_onCoordinateFocus);
+    final editPostId = widget.editPostId;
+    if (editPostId != null) {
+      unawaited(_controller.loadForEdit(editPostId));
+    }
   }
 
   @override
@@ -64,6 +68,8 @@ class _UploadViewState extends State<UploadView> {
   }
 
   void _sync() {
+    _setText(_title, _controller.title);
+    _setText(_body, _controller.body);
     _setText(_place, _controller.placeName);
     _setText(_search, _controller.searchQuery);
     _setText(_latitude, _controller.latitudeText);
@@ -112,74 +118,89 @@ class _UploadViewState extends State<UploadView> {
   Future<void> _submit() async {
     final submitted = await _controller.submit();
     if (!submitted || !mounted) return;
-    Navigator.of(context).pop('Spot submitted.');
+    Navigator.of(context).pop(
+      _controller.isEditMode ? 'Spot updated.' : 'Spot submitted.',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final uploading = _controller.uploading;
+    final loadingEdit = _controller.loadingEdit;
+    final busy = uploading || loadingEdit;
     final progress = _controller.uploadProgress;
+    final isEdit = widget.editPostId != null;
 
     return PopScope(
       canPop: !uploading,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.editPostId == null ? 'New spot' : 'Edit spot'),
-        ),
+        appBar: AppBar(title: Text(isEdit ? 'Edit spot' : 'New spot')),
         body: Column(
           children: [
-            if (uploading)
-              M3ELinearProgressIndicator(value: progress, minHeight: 4),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  UploadPhotoSection(controller: _controller),
-                  const SizedBox(height: 20),
-                  UploadDetailFields(
-                    enabled: !uploading,
-                    title: _title,
-                    body: _body,
-                    captured: _captured,
-                    hasCaptured: _controller.capturedAt != null,
-                    onTitle: _controller.setTitle,
-                    onBody: _controller.setBody,
-                    onPickCaptured: _pickCapturedAt,
-                    onClearCaptured: () => _controller.setCapturedAt(null),
-                  ),
-                  const SizedBox(height: 16),
-                  UploadCharacterField(
-                    enabled: !uploading,
-                    onChanged: _controller.setCharacterIds,
-                  ),
-                  const SizedBox(height: 20),
-                  UploadLocationSection(
-                    controller: _controller,
-                    search: _search,
-                    place: _place,
-                    latitude: _latitude,
-                    longitude: _longitude,
-                    latitudeFocus: _latitudeFocus,
-                    longitudeFocus: _longitudeFocus,
-                  ),
-                  if (_controller.error != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _controller.error!,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: colors.error),
-                    ),
-                  ],
-                ],
+            if (uploading || loadingEdit)
+              M3ELinearProgressIndicator(
+                value: loadingEdit ? null : progress,
+                minHeight: 4,
               ),
+            Expanded(
+              child: loadingEdit && _controller.photos.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      children: [
+                        UploadPhotoSection(controller: _controller),
+                        const SizedBox(height: 20),
+                        UploadDetailFields(
+                          enabled: !busy,
+                          title: _title,
+                          body: _body,
+                          captured: _captured,
+                          hasCaptured: _controller.capturedAt != null,
+                          onTitle: _controller.setTitle,
+                          onBody: _controller.setBody,
+                          onPickCaptured: _pickCapturedAt,
+                          onClearCaptured: () =>
+                              _controller.setCapturedAt(null),
+                        ),
+                        const SizedBox(height: 16),
+                        UploadCharacterField(
+                          key: ValueKey(
+                            'chars-${_controller.characterIds.join(',')}',
+                          ),
+                          enabled: !busy,
+                          initialSelectedIds: _controller.characterIds,
+                          onChanged: _controller.setCharacterIds,
+                        ),
+                        const SizedBox(height: 20),
+                        UploadLocationSection(
+                          controller: _controller,
+                          search: _search,
+                          place: _place,
+                          latitude: _latitude,
+                          longitude: _longitude,
+                          latitudeFocus: _latitudeFocus,
+                          longitudeFocus: _longitudeFocus,
+                        ),
+                        if (_controller.error != null) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            _controller.error!,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: colors.error),
+                          ),
+                        ],
+                      ],
+                    ),
             ),
             SafeArea(
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: M3EButton.icon(
-                  onPressed: _controller.canSubmit ? _submit : null,
+                  onPressed: _controller.canSubmit && !loadingEdit
+                      ? _submit
+                      : null,
                   style: M3EButtonStyle.filled,
                   size: M3EButtonSize.md,
                   shape: M3EButtonShape.round,
@@ -193,6 +214,8 @@ class _UploadViewState extends State<UploadView> {
                   label: Text(
                     uploading
                         ? '${_controller.progressLabel}${progress == null ? '' : ' ${(progress * 100).round()}%'}'
+                        : isEdit
+                        ? 'Save changes'
                         : 'Submit spot',
                   ),
                 ),
