@@ -111,7 +111,7 @@ class _UserPostsSectionState extends State<UserPostsSection> {
                 loadingFirst: loadingFirst,
                 columns: columns,
                 bottomPadding: bottomPadding,
-                emptyMessage: 'Approved posts will appear here.',
+                emptyMessage: 'No posts yet.',
                 itemBuilder: (context, index) {
                   final post = posts[index];
                   return PostCard(

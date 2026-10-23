@@ -8,11 +8,9 @@ import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login/auth_login_methods.dart';
 import '../auth/login/auth_login_view.dart';
-import '../post/detail/post_detail_sheet.dart';
 import '../settings/settings_view.dart';
-import '../upload/upload_view.dart';
 import 'user_controller.dart';
-import 'user_model.dart';
+import 'user_posts_actions.dart';
 import 'user_posts_section.dart';
 
 class UserView extends StatefulWidget {
@@ -180,21 +178,11 @@ class _UserViewState extends State<UserView> {
     );
   }
 
-  Future<void> _onOpenPost(UserPostSummary post) async {
-    if (post.status == PostStatus.approved) {
-      await showPostDetailSheet(context, post.id);
-      return;
-    }
-    // Non-approved posts are not on the public detail API.
-    await _onEditPost(post);
-  }
+  Future<void> _onOpenPost(UserPostSummary post) =>
+      openUserPost(context, post);
 
   Future<void> _onEditPost(UserPostSummary post) async {
-    final message = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
-        builder: (_) => UploadView(editPostId: post.id),
-      ),
-    );
+    final message = await editUserPost(context, post);
     if (!mounted) return;
     if (message != null && message.isNotEmpty) {
       ScaffoldMessenger.of(
