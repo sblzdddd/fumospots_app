@@ -12,15 +12,16 @@ class FloatingBottomDock extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onAddPressed,
     this.blurEnabled = true,
+    this.showMap = true,
   });
 
-  /// 0 = Home, 1 = Map, 2 = Profile.
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onAddPressed;
 
-  /// Frosted fill over the scrolling content. Off leaves a solid surface.
   final bool blurEnabled;
+
+  final bool showMap;
 
   static const _gap = 8.0;
   static const _radius = BorderRadius.all(Radius.circular(32));
@@ -40,25 +41,25 @@ class FloatingBottomDock extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // One active nav slot + two inactive nav + add (always inactive).
-          const totalFlex = _activeFlex + _inactiveFlex * 3;
-          final available = constraints.maxWidth - _gap * 3;
+          final profileIndex = showMap ? 2 : 1;
+          final slotCount = showMap ? 4 : 3;
+          final totalFlex = _activeFlex + _inactiveFlex * (slotCount - 1);
+          final available = constraints.maxWidth - _gap * (slotCount - 1);
 
           double widthFor({required bool active}) {
             final flex = active ? _activeFlex : _inactiveFlex;
             return available * flex / totalFlex;
           }
 
-          return Row(
-            children: [
-              _navSlot(
-                width: widthFor(active: selectedIndex == 0),
-                index: 0,
-                tooltip: 'Home',
-                icon: FontAwesomeIcons.house,
-                selectedIcon: FontAwesomeIcons.solidHouse,
-              ),
-              const SizedBox(width: _gap),
+          final slots = <Widget>[
+            _navSlot(
+              width: widthFor(active: selectedIndex == 0),
+              index: 0,
+              tooltip: 'Home',
+              icon: FontAwesomeIcons.house,
+              selectedIcon: FontAwesomeIcons.solidHouse,
+            ),
+            if (showMap)
               _navSlot(
                 width: widthFor(active: selectedIndex == 1),
                 index: 1,
@@ -66,28 +67,34 @@ class FloatingBottomDock extends StatelessWidget {
                 icon: FontAwesomeIcons.map,
                 selectedIcon: FontAwesomeIcons.solidMap,
               ),
-              const SizedBox(width: _gap),
-              _navSlot(
-                width: widthFor(active: selectedIndex == 2),
-                index: 2,
-                tooltip: 'Profile',
-                icon: FontAwesomeIcons.user,
-                selectedIcon: FontAwesomeIcons.solidUser,
+            _navSlot(
+              width: widthFor(active: selectedIndex == profileIndex),
+              index: profileIndex,
+              tooltip: 'Profile',
+              icon: FontAwesomeIcons.user,
+              selectedIcon: FontAwesomeIcons.solidUser,
+            ),
+            SizedBox(
+              width: widthFor(active: false),
+              child: M3EButton(
+                onPressed: onAddPressed,
+                style: M3EButtonStyle.filled,
+                shape: M3EButtonShape.round,
+                size: M3EButtonSize.sm,
+                decoration: _fillDecoration,
+                tooltip: 'Add',
+                semanticLabel: 'Add',
+                child: const FaIcon(FontAwesomeIcons.plus, size: 18),
               ),
-              const SizedBox(width: _gap),
-              SizedBox(
-                width: widthFor(active: false),
-                child: M3EButton(
-                  onPressed: onAddPressed,
-                  style: M3EButtonStyle.filled,
-                  shape: M3EButtonShape.round,
-                  size: M3EButtonSize.sm,
-                  decoration: _fillDecoration,
-                  tooltip: 'Add',
-                  semanticLabel: 'Add',
-                  child: const FaIcon(FontAwesomeIcons.plus, size: 18),
-                ),
-              ),
+            ),
+          ];
+
+          return Row(
+            children: [
+              for (var i = 0; i < slots.length; i++) ...[
+                if (i > 0) const SizedBox(width: _gap),
+                slots[i],
+              ],
             ],
           );
         },

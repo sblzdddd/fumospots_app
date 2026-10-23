@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
@@ -13,6 +14,17 @@ import '../settings/visual_settings_controller.dart';
 import '../upload/upload_view.dart';
 import '../user/user_view.dart';
 import 'bottom_navigation.dart';
+
+/// Map tab is off on desktop (MapLibre still needs webview there).
+bool get _mapPageEnabled {
+  if (kIsWeb) {
+    return true;
+  }
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.macOS || TargetPlatform.windows => false,
+    _ => true,
+  };
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -58,7 +70,7 @@ class _MainScreenState extends State<MainScreen> {
   void _onDestinationSelected(int index) {
     setState(() {
       _selectedIndex = index;
-      if (index == 1) {
+      if (_mapPageEnabled && index == 1) {
         _mapVisited = true;
       }
     });
@@ -90,13 +102,22 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final cs = Theme.of(context).colorScheme;
+    const maxBarWidth = 400.0;
+    const sideInset = 24.0;
+    const bottomOffset = 8.0;
+    final media = MediaQuery.of(context);
+    final availableWidth =
+        media.size.width - media.padding.horizontal - sideInset * 2;
+    final barWidth =
+        availableWidth < maxBarWidth ? availableWidth : maxBarWidth;
 
     return Scaffold(
       body: BottomBar(
-        layout: const BottomBarLayout.adaptive(
-          maxWidth: 400,
-          offset: 24,
-          borderRadius: BorderRadius.all(Radius.circular(32)),
+        layout: BottomBarLayout(
+          width: barWidth,
+          maxWidth: maxBarWidth,
+          offset: bottomOffset,
+          borderRadius: const BorderRadius.all(Radius.circular(32)),
           clip: Clip.none,
         ),
         motion: const BottomBarMotion.cupertino(
@@ -135,14 +156,15 @@ class _MainScreenState extends State<MainScreen> {
               contentInsetTop: topInset,
               onOpenPost: _openPost,
             ),
-            if (_mapVisited)
-              SpotMapView(
-                contentInsetTop: topInset,
-                selectedPostId: _selectedPostId,
-                onOpenPost: _openPost,
-              )
-            else
-              const SizedBox.expand(),
+            if (_mapPageEnabled)
+              if (_mapVisited)
+                SpotMapView(
+                  contentInsetTop: topInset,
+                  selectedPostId: _selectedPostId,
+                  onOpenPost: _openPost,
+                )
+              else
+                const SizedBox.expand(),
             const UserView(),
           ],
         ),
@@ -151,6 +173,7 @@ class _MainScreenState extends State<MainScreen> {
           onDestinationSelected: _onDestinationSelected,
           onAddPressed: _onAddPressed,
           blurEnabled: _visual.blurEnabled,
+          showMap: _mapPageEnabled,
         ),
       ),
     );

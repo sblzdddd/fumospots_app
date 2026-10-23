@@ -10,7 +10,7 @@ class FumoStore {
     iOptions: IOSOptions(),
     lOptions: LinuxOptions(),
     wOptions: WindowsOptions(),
-    mOptions: MacOsOptions(),
+    mOptions: MacOsOptions(usesDataProtectionKeychain: false),
   );
 
   Future<String?> read({required String key}) async {

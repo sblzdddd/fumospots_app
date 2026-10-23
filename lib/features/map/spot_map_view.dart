@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+// MapLibre controls still pull in flutter/material.
+import 'package:flutter/material.dart' as legacy show Material, MaterialType;
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
-import 'package:m3e_core/m3e_core.dart';
 import 'package:maplibre/maplibre.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -15,7 +15,6 @@ import '../character/filter/character_filter_sync.dart';
 import '../post/detail/post_detail_sheet.dart';
 import 'map_click.dart';
 import 'map_feature_factory.dart';
-import 'map_locate.dart';
 import 'map_points_controller.dart';
 import 'map_status_banner.dart';
 import 'map_style.dart';
@@ -43,11 +42,9 @@ class _SpotMapViewState extends State<SpotMapView> {
       GetIt.instance<CharacterFilterController>();
   final CharacterCatalogController _catalog =
       GetIt.instance<CharacterCatalogController>();
-  final MapLocate _locate = MapLocate();
   final MapPreviewAnnotations _previews = MapPreviewAnnotations();
 
   MapController? _map;
-  bool _locating = false;
   double _zoom = mapDefaultZoom;
   Size _mapSize = Size.zero;
   List<Feature<Point>> _circleFeatures = const [];
@@ -194,49 +191,28 @@ class _SpotMapViewState extends State<SpotMapView> {
     );
   }
 
-  Future<void> _goToMyLocation() async {
-    final map = _map;
-    if (map == null || _locating) {
-      return;
-    }
-
-    setState(() => _locating = true);
-    try {
-      final error = await _locate.goToMyLocation(map);
-      if (error != null && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error)));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Couldn't get your location.")),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _locating = false);
-      }
-    }
-  }
-
-  Widget _locateFab(double bottom) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottom),
-      child: M3EFab(
-        color: M3EFabColor.secondary,
-        tooltip: 'My location',
-        onPressed: _locating ? null : _goToMyLocation,
-        icon: _locating
-            ? SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-              )
-            : const FaIcon(FontAwesomeIcons.locationCrosshairs),
+  Widget _mapOverlays({
+    required double controlsBottom,
+    required double compassTop,
+  }) {
+    // ignore: deprecated_member_use
+    return MaterialUiCompatibilityBridge(
+      child: legacy.Material(
+        type: legacy.MaterialType.transparency,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            MapScalebar(padding: EdgeInsets.only(bottom: controlsBottom - 88, left: 12)),
+            SourceAttribution(padding: EdgeInsets.only(bottom: controlsBottom - 88, right: 12)),
+            MapControlButtons(
+              showTrackLocation: true,
+              padding: EdgeInsets.only(right: 12, bottom: controlsBottom),
+            ),
+            MapCompass(
+              padding: EdgeInsets.only(top: compassTop, right: 18),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -257,6 +233,7 @@ class _SpotMapViewState extends State<SpotMapView> {
     final selectedId = widget.selectedPostId;
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final barHeight = BottomBarScope.maybeOf(context)?.barHeight;
+    final compassTop = widget.contentInsetTop + 96;
 
     return Stack(
       fit: StackFit.expand,
@@ -301,7 +278,6 @@ class _SpotMapViewState extends State<SpotMapView> {
                   return;
                 }
                 _map = controller;
-                _locate.reset();
                 _styleReady = false;
                 _armStyleRecovery();
               },
@@ -350,10 +326,23 @@ class _SpotMapViewState extends State<SpotMapView> {
                 ],
               ],
               children: <Widget>[
-                MapScalebar(),
-                SourceAttribution(),
-                MapControlButtons(showTrackLocation: true),
-                MapCompass(),
+                if (barHeight == null)
+                  _mapOverlays(
+                    controlsBottom: bottomPad,
+                    compassTop: compassTop,
+                  )
+                else
+                  ValueListenableBuilder<double>(
+                    valueListenable: barHeight,
+                    builder: (context, value, _) {
+                      final clearance =
+                          (value > bottomPad ? value : bottomPad);
+                      return _mapOverlays(
+                        controlsBottom: clearance,
+                        compassTop: compassTop,
+                      );
+                    },
+                  ),
               ],
             );
           },
@@ -378,19 +367,6 @@ class _SpotMapViewState extends State<SpotMapView> {
               ),
             ],
           ),
-        ),
-        Positioned(
-          right: 32,
-          bottom: 0,
-          child: barHeight == null
-              ? _locateFab(bottomPad)
-              : ValueListenableBuilder<double>(
-                  valueListenable: barHeight,
-                  builder: (context, value, _) {
-                    final clearance = value > bottomPad ? value : bottomPad;
-                    return _locateFab(clearance);
-                  },
-                ),
         ),
       ],
     );
