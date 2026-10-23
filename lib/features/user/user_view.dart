@@ -10,6 +10,7 @@ import '../auth/login/auth_login_methods.dart';
 import '../auth/login/auth_login_view.dart';
 import '../settings/settings_view.dart';
 import 'user_controller.dart';
+import 'user_model.dart';
 import 'user_posts_actions.dart';
 import 'user_posts_section.dart';
 
