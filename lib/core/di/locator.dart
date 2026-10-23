@@ -16,6 +16,7 @@ import '../../features/upload/upload_controller.dart';
 import '../../features/upload/upload_repository.dart';
 import '../../features/settings/theme_controller.dart';
 import '../../features/settings/visual_settings_controller.dart';
+import '../../features/user/user_controller.dart';
 import '../../features/user/user_repository.dart';
 import '../config/fumospots_config.dart';
 import '../services/fumo_client.dart';
@@ -136,6 +137,10 @@ void setupDI() {
     getIt.registerLazySingleton<UserRepository>(
       () => UserRepository(client: getIt<FumoClient>()),
     );
+  }
+
+  if (!getIt.isRegistered<UserController>()) {
+    getIt.registerLazySingleton<UserController>(UserController.new);
   }
 
   // Map
