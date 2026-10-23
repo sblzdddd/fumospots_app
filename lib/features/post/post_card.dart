@@ -9,10 +9,18 @@ import '../../core/services/image_ratio.dart';
 import 'post_model.dart';
 
 class PostCard extends StatefulWidget {
-  const PostCard({super.key, required this.post, required this.onPress});
+  const PostCard({
+    super.key,
+    required this.post,
+    required this.onPress,
+    this.badge,
+    this.onEdit,
+  });
 
   final PostListItem post;
   final VoidCallback onPress;
+  final Widget? badge;
+  final VoidCallback? onEdit;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -90,85 +98,139 @@ class _PostCardState extends State<PostCard> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final showImage = widget.post.thumbUrl != null && !_failed;
+    final onEdit = widget.onEdit;
 
-    return M3ESegmentedItem(
-      index: 0,
-      position: M3ESegmentedItemPosition.single,
-      outerRadius: 16,
-      innerRadius: 16,
-      gap: 0,
-      color: colors.surfaceContainerHigh,
-      padding: EdgeInsets.zero,
-      pressedScale: 0.97,
-      pressedRadius: 12,
-      splashFactory: InkSparkle.splashFactory,
-      onTap: (_) => widget.onPress(),
-      semanticLabel: widget.post.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: 1 / _aspect,
-            child: ColoredBox(
-              color: colors.outlineVariant,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (showImage)
-                    CachedNetworkImage(
-                      imageUrl: widget.post.thumbUrl!,
-                      cacheManager: _images.cacheManager,
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
-                      placeholder: (_, _) => const SizedBox.shrink(),
-                      errorWidget: (_, _, _) => Center(
-                        child: FaIcon(
-                          FontAwesomeIcons.image,
-                          size: 22,
-                          color: colors.onSurfaceVariant,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        M3ESegmentedItem(
+          index: 0,
+          position: M3ESegmentedItemPosition.single,
+          outerRadius: 16,
+          innerRadius: 16,
+          gap: 0,
+          color: colors.surfaceContainerHigh,
+          padding: EdgeInsets.zero,
+          pressedScale: 0.97,
+          pressedRadius: 12,
+          splashFactory: InkSparkle.splashFactory,
+          onTap: (_) => widget.onPress(),
+          semanticLabel: widget.post.title,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AspectRatio(
+                aspectRatio: 1 / _aspect,
+                child: ColoredBox(
+                  color: colors.outlineVariant,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (showImage)
+                        CachedNetworkImage(
+                          imageUrl: widget.post.thumbUrl!,
+                          cacheManager: _images.cacheManager,
+                          fit: BoxFit.cover,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
+                          placeholder: (_, _) => const SizedBox.shrink(),
+                          errorWidget: (_, _, _) => Center(
+                            child: FaIcon(
+                              FontAwesomeIcons.image,
+                              size: 22,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  if (!showImage)
-                    Center(
-                      child: FaIcon(
-                        FontAwesomeIcons.image,
-                        size: 22,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                ],
+                      if (!showImage)
+                        Center(
+                          child: FaIcon(
+                            FontAwesomeIcons.image,
+                            size: 22,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      if (widget.badge != null)
+                        Positioned(top: 8, left: 8, right: 8, child: widget.badge!),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-            child: Text(
-              widget.post.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 14,
-                height: 1.25,
-                fontWeight: FontWeight.w500,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Text(
+                  widget.post.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.25,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: Text(
+                  widget.post.placeName ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Text(
-              widget.post.placeName ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10,
+        ),
+        if (onEdit != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              onPressed: onEdit,
+              tooltip: 'Edit post',
+              icon: FaIcon(
+                FontAwesomeIcons.penToSquare,
+                size: 14,
                 color: colors.onSurfaceVariant,
-                fontWeight: FontWeight.w300,
               ),
             ),
           ),
-        ],
+      ],
+    );
+  }
+}
+
+/// Compact status chip for overlaying on [PostCard] thumbnails.
+class PostStatusBadge extends StatelessWidget {
+  const PostStatusBadge({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.topLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }
