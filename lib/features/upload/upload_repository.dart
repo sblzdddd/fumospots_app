@@ -112,6 +112,37 @@ class UploadRepository {
     );
   }
 
+  Future<void> updatePost({
+    required int postId,
+    required String title,
+    required String? body,
+    required List<PreparedPhoto> photos,
+    required DateTime? capturedAt,
+    required UploadLatLng location,
+    required String placeName,
+    required String? countryName,
+    required String? regionName,
+    required String? cityName,
+    required List<int> characterIds,
+  }) async {
+    await _client.post(
+      '/api/posts/$postId/edit',
+      data: _postPayload(
+        title: title,
+        body: body,
+        photos: photos,
+        capturedAt: capturedAt,
+        location: location,
+        placeName: placeName,
+        countryName: countryName,
+        regionName: regionName,
+        cityName: cityName,
+        characterIds: characterIds,
+      ),
+      fallback: 'Could not update the spot.',
+    );
+  }
+
   Map<String, dynamic> _postPayload({
     required String title,
     required String? body,

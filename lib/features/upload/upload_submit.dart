@@ -18,6 +18,7 @@ class UploadSubmitInput {
     required this.regionName,
     required this.cityName,
     required this.characterIds,
+    this.editPostId,
   });
 
   final String userId;
@@ -31,6 +32,9 @@ class UploadSubmitInput {
   final String? regionName;
   final String? cityName;
   final List<int> characterIds;
+  final int? editPostId;
+
+  bool get isEdit => editPostId != null;
 }
 
 class UploadSubmitProgress {
@@ -52,8 +56,11 @@ Future<void> submitUpload({
   required UploadSubmitInput input,
   required UploadProgressCallback onProgress,
 }) async {
+  final newPhotos = [for (final photo in input.photos) if (!photo.isExisting) photo];
+  final existingCount = input.photos.length - newPhotos.length;
   var done = 0;
-  var total = input.photos.length * 2;
+  // Existing photos skip convert (2 steps) and contribute 0 blobs.
+  var total = newPhotos.length * 2 + existingCount;
   onProgress(
     UploadSubmitProgress(label: 'Converting', done: done, total: total),
   );
@@ -64,6 +71,21 @@ Future<void> submitUpload({
     final prepared = <PreparedPhoto>[];
     for (var index = 0; index < input.photos.length; index++) {
       final photo = input.photos[index];
+      if (photo.isExisting) {
+        prepared.add(
+          PreparedPhoto(
+            imagePath: photo.storageImagePath!,
+            thumbPath: photo.storageThumbPath,
+            blobs: const [],
+          ),
+        );
+        done += 1;
+        onProgress(
+          UploadSubmitProgress(label: 'Converting', done: done, total: total),
+        );
+        continue;
+      }
+
       prepared.add(
         await prepareUploadPhoto(
           sourcePath: photo.path,
@@ -102,18 +124,35 @@ Future<void> submitUpload({
       },
     );
 
-    await repository.createPost(
-      title: input.title,
-      body: input.body.isEmpty ? null : input.body,
-      photos: prepared,
-      capturedAt: input.capturedAt,
-      location: input.location,
-      placeName: input.placeName,
-      countryName: input.countryName,
-      regionName: input.regionName,
-      cityName: input.cityName,
-      characterIds: input.characterIds,
-    );
+    final editPostId = input.editPostId;
+    if (editPostId != null) {
+      await repository.updatePost(
+        postId: editPostId,
+        title: input.title,
+        body: input.body.isEmpty ? null : input.body,
+        photos: prepared,
+        capturedAt: input.capturedAt,
+        location: input.location,
+        placeName: input.placeName,
+        countryName: input.countryName,
+        regionName: input.regionName,
+        cityName: input.cityName,
+        characterIds: input.characterIds,
+      );
+    } else {
+      await repository.createPost(
+        title: input.title,
+        body: input.body.isEmpty ? null : input.body,
+        photos: prepared,
+        capturedAt: input.capturedAt,
+        location: input.location,
+        placeName: input.placeName,
+        countryName: input.countryName,
+        regionName: input.regionName,
+        cityName: input.cityName,
+        characterIds: input.characterIds,
+      );
+    }
     done += 1;
     onProgress(
       UploadSubmitProgress(label: 'Uploading', done: done, total: total),
@@ -134,7 +173,13 @@ class BenchmarkResult {
 Future<BenchmarkResult> benchmarkPhotoConversions(
   List<UploadPhoto> photos,
 ) async {
-  final pending = List<UploadPhoto>.of(photos);
+  final pending = [
+    for (final photo in photos)
+      if (!photo.isExisting) photo,
+  ];
+  if (pending.isEmpty) {
+    return const BenchmarkResult(error: 'Add a new photo to time conversion.');
+  }
   final watch = Stopwatch()..start();
   try {
     for (var i = 0; i < pending.length; i++) {

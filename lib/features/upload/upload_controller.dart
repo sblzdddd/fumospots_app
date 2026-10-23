@@ -474,6 +474,7 @@ class UploadController extends ChangeNotifier {
           regionName: regionName,
           cityName: cityName,
           characterIds: characterIds,
+          editPostId: editPostId,
         ),
         onProgress: (progress) {
           progressLabel = progress.label;
@@ -487,7 +488,9 @@ class UploadController extends ChangeNotifier {
       this.error = error.message;
       return false;
     } catch (_) {
-      error = 'Could not submit the spot.';
+      error = isEditMode
+          ? 'Could not update the spot.'
+          : 'Could not submit the spot.';
       return false;
     } finally {
       uploading = false;
