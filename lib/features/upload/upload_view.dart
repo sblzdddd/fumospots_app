@@ -12,7 +12,10 @@ import 'upload_controller.dart';
 import 'upload_detail_fields.dart';
 
 class UploadView extends StatefulWidget {
-  const UploadView({super.key});
+  const UploadView({super.key, this.editPostId});
+
+  /// When set, the composer loads and updates an existing post.
+  final int? editPostId;
 
   @override
   State<UploadView> createState() => _UploadViewState();
@@ -121,7 +124,9 @@ class _UploadViewState extends State<UploadView> {
     return PopScope(
       canPop: !uploading,
       child: Scaffold(
-        appBar: AppBar(title: const Text('New spot')),
+        appBar: AppBar(
+          title: Text(widget.editPostId == null ? 'New spot' : 'Edit spot'),
+        ),
         body: Column(
           children: [
             if (uploading)
