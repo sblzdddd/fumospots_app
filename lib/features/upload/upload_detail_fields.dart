@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import 'upload_model.dart';
 
 class UploadDetailFields extends StatelessWidget {
@@ -35,10 +36,10 @@ class UploadDetailFields extends StatelessWidget {
           enabled: enabled,
           maxLength: maxTitleLength,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'Title *',
-            hintText: 'What is this spot?',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.t(S.titleRequired),
+            hintText: context.t(S.titleHint),
+            border: const OutlineInputBorder(),
           ),
           onChanged: onTitle,
         ),
@@ -49,10 +50,10 @@ class UploadDetailFields extends StatelessWidget {
           maxLength: maxBodyLength,
           minLines: 3,
           maxLines: 6,
-          decoration: const InputDecoration(
-            labelText: 'Notes',
+          decoration: InputDecoration(
+            labelText: context.t(S.notes),
             alignLabelWithHint: true,
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
           onChanged: onBody,
         ),
@@ -62,11 +63,11 @@ class UploadDetailFields extends StatelessWidget {
           readOnly: true,
           enabled: enabled,
           decoration: InputDecoration(
-            labelText: 'Captured',
+            labelText: context.t(S.captured),
             border: const OutlineInputBorder(),
             suffixIcon: hasCaptured
                 ? IconButton(
-                    tooltip: 'Clear date',
+                    tooltip: context.t(S.clearDate),
                     onPressed: enabled ? onClearCaptured : null,
                     icon: const Icon(Icons.close),
                   )

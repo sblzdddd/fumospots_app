@@ -5,11 +5,13 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import 'location/upload_location_section.dart';
 import 'photo/upload_photo_section.dart';
 import 'upload_character_field.dart';
 import 'upload_controller.dart';
 import 'upload_detail_fields.dart';
+import 'upload_model.dart';
 
 class UploadView extends StatefulWidget {
   const UploadView({super.key, this.editPostId});
@@ -119,7 +121,7 @@ class _UploadViewState extends State<UploadView> {
     final submitted = await _controller.submit();
     if (!submitted || !mounted) return;
     Navigator.of(context).pop(
-      _controller.isEditMode ? 'Spot updated.' : 'Spot submitted.',
+      _controller.isEditMode ? S.spotUpdated : S.spotSubmitted,
     );
   }
 
@@ -135,7 +137,9 @@ class _UploadViewState extends State<UploadView> {
     return PopScope(
       canPop: !uploading,
       child: Scaffold(
-        appBar: AppBar(title: Text(isEdit ? 'Edit spot' : 'New spot')),
+        appBar: AppBar(
+          title: Text(context.t(isEdit ? S.editSpot : S.newSpot)),
+        ),
         body: Column(
           children: [
             if (uploading || loadingEdit)
@@ -185,7 +189,10 @@ class _UploadViewState extends State<UploadView> {
                         if (_controller.error != null) ...[
                           const SizedBox(height: 16),
                           Text(
-                            _controller.error!,
+                            context.t(
+                              _controller.error!,
+                              params: {'count': '$maxPostPhotos'},
+                            ),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: colors.error),
                           ),
@@ -213,10 +220,8 @@ class _UploadViewState extends State<UploadView> {
                   ),
                   label: Text(
                     uploading
-                        ? '${_controller.progressLabel}${progress == null ? '' : ' ${(progress * 100).round()}%'}'
-                        : isEdit
-                        ? 'Save changes'
-                        : 'Submit spot',
+                        ? '${context.t(_controller.progressLabel)}${progress == null ? '' : ' ${(progress * 100).round()}%'}'
+                        : context.t(isEdit ? S.saveChanges : S.submitSpot),
                   ),
                 ),
               ),

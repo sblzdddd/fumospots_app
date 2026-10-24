@@ -1,3 +1,4 @@
+import '../../core/i18n/keys.dart';
 import 'photo/upload_webp.dart';
 import 'upload_model.dart';
 import 'upload_repository.dart';
@@ -63,7 +64,7 @@ Future<void> submitUpload({
   // Existing photos skip convert (2 steps) and contribute 0 blobs.
   var total = newPhotos.length * 2 + existingCount;
   onProgress(
-    UploadSubmitProgress(label: 'Converting', done: done, total: total),
+    UploadSubmitProgress(label: S.converting, done: done, total: total),
   );
 
   final postFolder = newUploadId();
@@ -82,7 +83,7 @@ Future<void> submitUpload({
         );
         done += 1;
         onProgress(
-          UploadSubmitProgress(label: 'Converting', done: done, total: total),
+          UploadSubmitProgress(label: S.converting, done: done, total: total),
         );
         continue;
       }
@@ -99,7 +100,7 @@ Future<void> submitUpload({
         );
         done += 2;
         onProgress(
-          UploadSubmitProgress(label: 'Converting', done: done, total: total),
+          UploadSubmitProgress(label: S.converting, done: done, total: total),
         );
         continue;
       }
@@ -115,7 +116,7 @@ Future<void> submitUpload({
             done += 1;
             onProgress(
               UploadSubmitProgress(
-                label: 'Converting',
+                label: S.converting,
                 done: done,
                 total: total,
               ),
@@ -128,7 +129,7 @@ Future<void> submitUpload({
     final blobs = [for (final photo in prepared) ...photo.blobs];
     total = done + blobs.length + 1;
     onProgress(
-      UploadSubmitProgress(label: 'Uploading', done: done, total: total),
+      UploadSubmitProgress(label: S.uploading, done: done, total: total),
     );
 
     await repository.uploadBlobs(
@@ -137,7 +138,7 @@ Future<void> submitUpload({
         attempted.add(path);
         done += 1;
         onProgress(
-          UploadSubmitProgress(label: 'Uploading', done: done, total: total),
+          UploadSubmitProgress(label: S.uploading, done: done, total: total),
         );
       },
     );
@@ -173,7 +174,7 @@ Future<void> submitUpload({
     }
     done += 1;
     onProgress(
-      UploadSubmitProgress(label: 'Uploading', done: done, total: total),
+      UploadSubmitProgress(label: S.uploading, done: done, total: total),
     );
   } catch (_) {
     await _cleanup(repository, attempted);

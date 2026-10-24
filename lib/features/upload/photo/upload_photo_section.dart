@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../upload_controller.dart';
 import '../upload_model.dart';
 import '../upload_section.dart';
@@ -25,7 +26,7 @@ class UploadPhotoSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         UploadSectionLabel(
-          'Photos',
+          context.t(S.photos),
           trailing: '${controller.photos.length}/$maxPostPhotos',
           required: true,
         ),
@@ -40,12 +41,12 @@ class UploadPhotoSection extends StatelessWidget {
         const SizedBox(height: 8),
         UploadActionPair(
           first: UploadAction(
-            label: 'Library',
+            label: context.t(S.library),
             icon: FontAwesomeIcons.images,
             onPressed: canAdd ? controller.pickFromGallery : null,
           ),
           second: UploadAction(
-            label: 'Camera',
+            label: context.t(S.camera),
             icon: FontAwesomeIcons.camera,
             onPressed: canAdd ? controller.pickFromCamera : null,
           ),
@@ -53,7 +54,7 @@ class UploadPhotoSection extends StatelessWidget {
         if (controller.detectingExif) ...[
           const SizedBox(height: 8),
           Text(
-            'Reading photo details…',
+            context.t(S.readingPhotoDetails),
             style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
@@ -250,7 +251,7 @@ class _PhotoFace extends StatelessWidget {
                 right: 6,
                 top: 6,
                 child: IconButton(
-                  tooltip: 'Remove photo',
+                  tooltip: context.t(S.removePhoto),
                   onPressed: enabled ? () => _confirmRemove(context) : null,
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.black.withValues(alpha: 0.55),
@@ -307,19 +308,19 @@ class _PhotoFace extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        content: const Padding(
-          padding: EdgeInsets.all(8),
-          child: Text('Remove this photo?'),
+        content: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(context.t(S.removePhotoConfirm)),
         ),
         actions: [
           M3EButton(
             onPressed: () => Navigator.pop(context, false),
             style: M3EButtonStyle.text,
-            child: const Text('Cancel'),
+            child: Text(context.t(S.cancel)),
           ),
           M3EButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove'),
+            child: Text(context.t(S.remove)),
           ),
         ],
       ),

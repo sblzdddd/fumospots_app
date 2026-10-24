@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/i18n/keys.dart';
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
 import 'location/upload_coordinates.dart';
@@ -17,7 +18,7 @@ import 'upload_model.dart';
 import 'upload_repository.dart';
 import 'upload_submit.dart';
 
-const _photoCompressionError = 'Could not compress a photo.';
+const _photoCompressionError = S.compressFailed;
 
 class UploadController extends ChangeNotifier {
   UploadController({
@@ -53,7 +54,7 @@ class UploadController extends ChangeNotifier {
   bool reverseLookup = false;
   bool uploading = false;
   bool loadingEdit = false;
-  String progressLabel = 'Submitting';
+  String progressLabel = S.submitting;
   String? error;
   int? editPostId;
   int _photoSeq = 0;
@@ -140,7 +141,7 @@ class UploadController extends ChangeNotifier {
       );
       await addPicked(files);
     } on PlatformException catch (error) {
-      this.error = error.message ?? 'Could not open photos.';
+      this.error = error.message ?? S.openPhotosFailed;
     } finally {
       _notify();
     }
@@ -155,7 +156,7 @@ class UploadController extends ChangeNotifier {
       );
       if (file != null) await addPicked([file]);
     } on PlatformException catch (error) {
-      this.error = error.message ?? 'Could not open the camera.';
+      this.error = error.message ?? S.openCameraFailed;
     } finally {
       _notify();
     }
@@ -356,7 +357,7 @@ class UploadController extends ChangeNotifier {
     } on FumoClientError catch (error) {
       this.error = error.message;
     } catch (_) {
-      error = 'Could not load this spot for editing.';
+      error = S.loadEditFailed;
     } finally {
       loadingEdit = false;
       _notify();
@@ -375,14 +376,14 @@ class UploadController extends ChangeNotifier {
     if (uploading || detectingExif) return;
     if (photos.isEmpty) {
       if (overwrite) {
-        error = 'Add a photo first.';
+        error = S.addPhotoFirst;
         _notify();
       }
       return;
     }
     if (photos.first.isExisting) {
       if (overwrite) {
-        error = 'Existing photos have no local EXIF.';
+        error = S.noLocalExif;
         _notify();
       }
       return;
@@ -395,13 +396,13 @@ class UploadController extends ChangeNotifier {
       if (shot.hasLocation && (overwrite || exactLocation == null)) {
         await _applyExact(shot.lat!, shot.lng!);
       } else if (overwrite && !shot.hasLocation) {
-        error = 'This photo has no location.';
+        error = S.photoNoLocation;
       }
       if (shot.capturedAt != null && (overwrite || capturedAt == null)) {
         capturedAt = shot.capturedAt;
       }
     } catch (_) {
-      if (overwrite) error = 'Could not read photo details.';
+      if (overwrite) error = S.readPhotoDetailsFailed;
     } finally {
       detectingExif = false;
       _notify();
@@ -412,7 +413,7 @@ class UploadController extends ChangeNotifier {
     final query = searchQuery.trim();
     if (searching) return;
     if (query.length < 2) {
-      error = 'Enter at least 2 characters to search.';
+      error = S.searchMinChars;
       _notify();
       return;
     }
@@ -422,12 +423,12 @@ class UploadController extends ChangeNotifier {
     try {
       searchResults = await _repository.searchPlaces(query);
       if (searchResults.isEmpty) {
-        error = 'No places found.';
+        error = S.noPlacesFound;
       }
     } on FumoClientError catch (error) {
       this.error = error.message;
     } catch (_) {
-      error = 'Place search failed.';
+      error = S.placeSearchFailed;
     } finally {
       searching = false;
       _notify();
@@ -482,46 +483,46 @@ class UploadController extends ChangeNotifier {
     final trimmedTitle = title.trim();
     final trimmedBody = body.trim();
     if (photos.isEmpty) {
-      error = 'Add at least one photo.';
+      error = S.addAtLeastOnePhoto;
       _notify();
       return false;
     }
     if (photos.length > maxPostPhotos) {
-      error = 'You can add up to $maxPostPhotos photos.';
+      error = S.maxPhotos;
       _notify();
       return false;
     }
     if (trimmedTitle.isEmpty || trimmedTitle.length > maxTitleLength) {
-      error = 'Title is required and must be 80 characters or fewer.';
+      error = S.titleValidation;
       _notify();
       return false;
     }
     if (trimmedBody.length > maxBodyLength) {
-      error = 'Body must be 1000 characters or fewer.';
+      error = S.bodyValidation;
       _notify();
       return false;
     }
     if (characterIds.isEmpty) {
-      error = 'Choose at least one character.';
+      error = S.chooseCharacter;
       _notify();
       return false;
     }
     final location = exactLocation;
     if (location == null) {
-      error = 'Set a location.';
+      error = S.setLocation;
       _notify();
       return false;
     }
     final userId = _auth.user?.userId;
     if (userId == null || userId.isEmpty || !_auth.hasUsername) {
-      error = 'Sign in to post a spot.';
+      error = S.signInToPost;
       _notify();
       return false;
     }
 
     final stillCompressing = photos.any((photo) => photo.isCompressing);
     uploading = true;
-    progressLabel = stillCompressing ? 'Converting' : 'Uploading';
+    progressLabel = stillCompressing ? S.converting : S.uploading;
     _progressDone = 0;
     _progressTotal = 0;
     _notify();
@@ -561,13 +562,11 @@ class UploadController extends ChangeNotifier {
       this.error = error.message;
       return false;
     } catch (_) {
-      error = isEditMode
-          ? 'Could not update the spot.'
-          : 'Could not submit the spot.';
+      error = isEditMode ? S.updateFailed : S.submitFailed;
       return false;
     } finally {
       uploading = false;
-      progressLabel = 'Submitting';
+      progressLabel = S.submitting;
       _progressDone = 0;
       _progressTotal = 0;
       _notify();

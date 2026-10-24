@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:dio/dio.dart';
 
+import '../../core/i18n/keys.dart';
 import '../../core/services/fumo_client.dart';
 import '../../core/services/fumo_client_error.dart';
 import '../../utils/json_converter.dart';
@@ -55,7 +56,7 @@ class UploadRepository {
         final blob = blobs[index];
         final target = targets[blob.path];
         if (target == null || target.size != blob.bytes.length) {
-          failure = const FumoClientError('Upload target is missing.');
+          failure = const FumoClientError(S.uploadTargetMissing);
           return;
         }
         try {

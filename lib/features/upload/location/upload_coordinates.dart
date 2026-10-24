@@ -1,3 +1,4 @@
+import '../../../core/i18n/keys.dart';
 import '../upload_model.dart';
 
 class CoordinateParseResult {
@@ -31,21 +32,15 @@ CoordinateParseResult parseCoordinatePair(
     return const CoordinateParseResult.cleared();
   }
   if (latitudeValue.isEmpty || longitudeValue.isEmpty) {
-    return const CoordinateParseResult.invalid(
-      'Enter both latitude and longitude.',
-    );
+    return const CoordinateParseResult.invalid(S.enterLatLng);
   }
   final latitude = parseCoordinate(latitudeValue, min: -90, max: 90);
   final longitude = parseCoordinate(longitudeValue, min: -180, max: 180);
   if (latitude == null) {
-    return const CoordinateParseResult.invalid(
-      'Latitude must be between -90 and 90.',
-    );
+    return const CoordinateParseResult.invalid(S.latitudeRange);
   }
   if (longitude == null) {
-    return const CoordinateParseResult.invalid(
-      'Longitude must be between -180 and 180.',
-    );
+    return const CoordinateParseResult.invalid(S.longitudeRange);
   }
   return CoordinateParseResult.ok(
     UploadLatLng(lat: latitude, lng: longitude),

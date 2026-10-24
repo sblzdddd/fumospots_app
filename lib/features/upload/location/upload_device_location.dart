@@ -1,5 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 
+import '../../../core/i18n/keys.dart';
 import '../upload_model.dart';
 
 class DeviceLocationResult {
@@ -18,9 +19,7 @@ Future<DeviceLocationResult> readDeviceLatLng() async {
   try {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      return const DeviceLocationResult.failed(
-        'Turn on location services to use your device location.',
-      );
+      return const DeviceLocationResult.failed(S.locationServicesOff);
     }
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -28,9 +27,7 @@ Future<DeviceLocationResult> readDeviceLatLng() async {
     }
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      return const DeviceLocationResult.failed(
-        'Location permission is required.',
-      );
+      return const DeviceLocationResult.failed(S.locationPermission);
     }
     final position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
@@ -42,8 +39,6 @@ Future<DeviceLocationResult> readDeviceLatLng() async {
       UploadLatLng(lat: position.latitude, lng: position.longitude),
     );
   } catch (_) {
-    return const DeviceLocationResult.failed(
-      'Could not read the device location.',
-    );
+    return const DeviceLocationResult.failed(S.deviceLocationFailed);
   }
 }

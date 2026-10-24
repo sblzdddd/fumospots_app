@@ -2,6 +2,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../upload_controller.dart';
 import '../upload_section.dart';
 
@@ -32,18 +33,18 @@ class UploadLocationSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const UploadSectionLabel('Location', required: true),
+        UploadSectionLabel(context.t(S.location), required: true),
         const SizedBox(height: 8),
         UploadActionPair(
           first: UploadAction(
-            label: 'Device',
+            label: context.t(S.device),
             icon: FontAwesomeIcons.locationDot,
             onPressed: uploading || controller.locating
                 ? null
                 : controller.fillFromDevice,
           ),
           second: UploadAction(
-            label: 'Photo EXIF',
+            label: context.t(S.photoExif),
             icon: FontAwesomeIcons.image,
             onPressed:
                 uploading ||
@@ -56,7 +57,7 @@ class UploadLocationSection extends StatelessWidget {
         if (controller.locationBusy) ...[
           const SizedBox(height: 8),
           Text(
-            _status(controller),
+            _status(context, controller),
             style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: colors.onSurfaceVariant),
           ),
@@ -71,9 +72,9 @@ class UploadLocationSection extends StatelessWidget {
         TextField(
           controller: place,
           enabled: !uploading,
-          decoration: const InputDecoration(
-            labelText: 'Place name',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.t(S.placeName),
+            border: const OutlineInputBorder(),
           ),
           onChanged: controller.setPlaceName,
         ),
@@ -98,7 +99,7 @@ class UploadLocationSection extends StatelessWidget {
         if (controller.coordinateError != null) ...[
           const SizedBox(height: 8),
           Text(
-            controller.coordinateError!,
+            context.t(controller.coordinateError!),
             style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: colors.error),
           ),
@@ -107,10 +108,10 @@ class UploadLocationSection extends StatelessWidget {
     );
   }
 
-  String _status(UploadController controller) {
-    if (controller.locating) return 'Reading device location…';
-    if (controller.reverseLookup) return 'Looking up place…';
-    return 'Reading photo location…';
+  String _status(BuildContext context, UploadController controller) {
+    if (controller.locating) return context.t(S.readingDeviceLocation);
+    if (controller.reverseLookup) return context.t(S.lookingUpPlace);
+    return context.t(S.readingPhotoLocation);
   }
 }
 
@@ -131,10 +132,10 @@ class _PlaceSearch extends StatelessWidget {
             controller: search,
             enabled: !controller.uploading,
             textInputAction: TextInputAction.search,
-            decoration: const InputDecoration(
-              labelText: 'Search place',
-              hintText: 'Cafe, park, station',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.t(S.searchPlace),
+              hintText: context.t(S.searchPlaceHint),
+              border: const OutlineInputBorder(),
             ),
             onChanged: controller.setSearchQuery,
             onSubmitted: (_) => controller.searchPlaces(),
@@ -148,8 +149,8 @@ class _PlaceSearch extends StatelessWidget {
           style: M3EButtonStyle.tonal,
           shape: M3EButtonShape.round,
           size: M3EButtonSize.md,
-          tooltip: 'Search',
-          semanticLabel: 'Search places',
+          tooltip: context.t(S.search),
+          semanticLabel: context.t(S.searchPlaces),
           child: FaIcon(
             controller.searching
                 ? FontAwesomeIcons.spinner
@@ -215,13 +216,25 @@ class _PlaceFacts extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _Fact(label: 'Country', value: country, loading: loading),
+          child: _Fact(
+            label: context.t(S.country),
+            value: country,
+            loading: loading,
+          ),
         ),
         Expanded(
-          child: _Fact(label: 'Region', value: region, loading: loading),
+          child: _Fact(
+            label: context.t(S.region),
+            value: region,
+            loading: loading,
+          ),
         ),
         Expanded(
-          child: _Fact(label: 'City', value: city, loading: loading),
+          child: _Fact(
+            label: context.t(S.city),
+            value: city,
+            loading: loading,
+          ),
         ),
       ],
     );
@@ -293,9 +306,9 @@ class _Coordinates extends StatelessWidget {
             focusNode: latitudeFocus,
             enabled: enabled,
             keyboardType: kind,
-            decoration: const InputDecoration(
-              labelText: 'Latitude *',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.t(S.latitude),
+              border: const OutlineInputBorder(),
             ),
             onChanged: onLatitude,
             onSubmitted: (_) => longitudeFocus.requestFocus(),
@@ -308,9 +321,9 @@ class _Coordinates extends StatelessWidget {
             focusNode: longitudeFocus,
             enabled: enabled,
             keyboardType: kind,
-            decoration: const InputDecoration(
-              labelText: 'Longitude *',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.t(S.longitude),
+              border: const OutlineInputBorder(),
             ),
             onChanged: onLongitude,
             onSubmitted: (_) => onSubmit(),

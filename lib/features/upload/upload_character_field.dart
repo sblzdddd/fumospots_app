@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../character/character_catalog_controller.dart';
 import '../character/character_format.dart';
 import '../post/post_format.dart';
@@ -28,6 +29,7 @@ class UploadCharacterField extends StatefulWidget {
 class _UploadCharacterFieldState extends State<UploadCharacterField> {
   final CharacterCatalogController _catalog =
       GetIt.instance<CharacterCatalogController>();
+  final LocaleController _locale = GetIt.instance<LocaleController>();
   final M3EDropdownController<int> _dropdown = M3EDropdownController<int>();
   bool _syncing = false;
 
@@ -35,6 +37,7 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
   void initState() {
     super.initState();
     _catalog.addListener(_onCatalog);
+    _locale.addListener(_onLocaleChanged);
     unawaited(_catalog.load());
   }
 
@@ -49,12 +52,35 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
   @override
   void dispose() {
     _catalog.removeListener(_onCatalog);
+    _locale.removeListener(_onLocaleChanged);
     _dropdown.dispose();
     super.dispose();
   }
 
   void _onCatalog() {
     if (mounted) setState(() {});
+  }
+
+  void _onLocaleChanged() {
+    if (mounted) setState(() {});
+    unawaited(_reloadLabels());
+  }
+
+  Future<void> _reloadLabels() async {
+    if (!_dropdown.initialized) {
+      return;
+    }
+    try {
+      final items = await _loadItems();
+      if (!mounted || !_dropdown.initialized) {
+        return;
+      }
+      _syncing = true;
+      _dropdown.setItems(items);
+      _syncing = false;
+    } catch (_) {
+      // Keep existing labels if reload fails.
+    }
   }
 
   bool _listEquals(List<int> a, List<int> b) {
@@ -108,7 +134,7 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const UploadSectionLabel('Characters', required: true),
+        UploadSectionLabel(context.t(S.characters), required: true),
         const SizedBox(height: 8),
         NotificationListener<ScrollNotification>(
           onNotification: (_) => true,
@@ -122,10 +148,10 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
             enabled: widget.enabled,
             containerRadius: 28,
             haptic: M3EHapticFeedback.light,
-            fieldStyle: const M3EDropdownFieldStyle(
-              hintText: 'Choose characters',
+            fieldStyle: M3EDropdownFieldStyle(
+              hintText: context.t(S.chooseCharacters),
               showClearIcon: true,
-              padding: EdgeInsets.all(14),
+              padding: const EdgeInsets.all(14),
             ),
             dropdownStyle: M3EDropdownStyle(
               elevation: 4,
@@ -135,13 +161,13 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
               contentPadding: const EdgeInsets.all(8),
               backgroundColor: colors.surfaceContainer,
             ),
-            searchStyle: const M3ESearchStyle(
-              hintText: 'Search characters…',
+            searchStyle: M3ESearchStyle(
+              hintText: context.t(S.searchCharacters),
               filled: false,
               autofocus: false,
               showClearIcon: true,
               searchDebounceMs: 0,
-              contentPadding: EdgeInsets.all(8),
+              contentPadding: const EdgeInsets.all(8),
             ),
             chipStyle: M3EChipStyle(
               backgroundColor: colors.secondaryContainer,
@@ -167,9 +193,11 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
             emptyBuilder: (context) => Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                _catalog.error != null
-                    ? "Couldn't load characters."
-                    : 'No matching characters.',
+                context.t(
+                  _catalog.error != null
+                      ? S.charactersLoadFailed
+                      : S.noMatchingCharacters,
+                ),
               ),
             ),
             closeOnBackButton: false,
@@ -188,7 +216,7 @@ class _UploadCharacterFieldState extends State<UploadCharacterField> {
               style: M3EButtonStyle.text,
               size: M3EButtonSize.sm,
               shape: M3EButtonShape.round,
-              child: const Text('Retry characters'),
+              child: Text(context.t(S.retryCharacters)),
             ),
           ),
         ],
