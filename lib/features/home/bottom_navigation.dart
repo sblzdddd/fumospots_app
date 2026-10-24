@@ -5,6 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
+
 /// Map tab is off on desktop (MapLibre still needs webview there).
 bool get mapPageEnabled {
   if (kIsWeb) {
@@ -67,23 +69,23 @@ class FloatingBottomDock extends StatelessWidget {
             _navSlot(
               width: widthFor(active: selectedIndex == 0),
               index: 0,
-              tooltip: 'Posts',
+              tooltip: context.t(S.navPosts),
               icon: FontAwesomeIcons.tableCellsLarge,
               selectedIcon: FontAwesomeIcons.tableCellsLarge,
-              label: 'Posts',
+              label: context.t(S.navPosts),
             ),
             if (showMap)
               _navSlot(
                 width: widthFor(active: selectedIndex == 1),
                 index: 1,
-                tooltip: 'Map',
+                tooltip: context.t(S.navMap),
                 icon: FontAwesomeIcons.map,
                 selectedIcon: FontAwesomeIcons.solidMap,
               ),
             _navSlot(
               width: widthFor(active: selectedIndex == profileIndex),
               index: profileIndex,
-              tooltip: 'Profile',
+              tooltip: context.t(S.navProfile),
               icon: FontAwesomeIcons.user,
               selectedIcon: FontAwesomeIcons.solidUser,
             ),
@@ -95,8 +97,8 @@ class FloatingBottomDock extends StatelessWidget {
                 shape: M3EButtonShape.round,
                 size: M3EButtonSize.sm,
                 decoration: _fillDecoration,
-                tooltip: 'Add',
-                semanticLabel: 'Add',
+                tooltip: context.t(S.navAdd),
+                semanticLabel: context.t(S.navAdd),
                 child: const FaIcon(FontAwesomeIcons.plus, size: 18),
               ),
             ),

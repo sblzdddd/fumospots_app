@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../home/brand_logo.dart';
 
 class SplashView extends StatelessWidget {
@@ -20,7 +21,7 @@ class SplashView extends StatelessWidget {
             const SizedBox(height: 32),
             M3ELoadingIndicator(
               color: colors.primary,
-              semanticsLabel: 'Loading Fumospots',
+              semanticsLabel: context.t(S.loadingApp),
               constraints: const BoxConstraints.tightFor(
                 width: 38,
                 height: 38,

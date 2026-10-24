@@ -4,6 +4,7 @@ import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login/auth_login_view.dart';
 import '../map/spot_map_view.dart';
@@ -87,7 +88,7 @@ class _MainScreenState extends State<MainScreen> {
     );
     if (!mounted || message == null || message.isEmpty) return;
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+        .showSnackBar(SnackBar(content: Text(context.t(message))));
   }
 
   @override
