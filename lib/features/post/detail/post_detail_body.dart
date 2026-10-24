@@ -31,12 +31,12 @@ class PostDetailBody extends StatelessWidget {
     final likeLabel = liked ? 'Unlike' : 'Like';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
@@ -44,6 +44,8 @@ class PostDetailBody extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 28,
+                    height: 1.2,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
