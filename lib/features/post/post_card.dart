@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../../core/services/image_cache_service.dart';
 import '../../core/services/image_ratio.dart';
 import 'post_model.dart';
@@ -241,7 +242,7 @@ class PostStatusBadge extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Text(
-            label,
+            context.t(label),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(

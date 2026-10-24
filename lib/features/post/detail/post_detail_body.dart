@@ -119,7 +119,7 @@ class PostDetailBody extends StatelessWidget {
             Divider(height: 1, color: colors.onSurface.withValues(alpha: 0.1)),
             const SizedBox(height: 16),
             Text(
-              'Author note',
+              context.t(S.authorNote),
               style: bodyStyle?.copyWith(
                 color: muted,
                 fontWeight: FontWeight.w700,
@@ -134,7 +134,7 @@ class PostDetailBody extends StatelessWidget {
             Divider(height: 1, color: colors.onSurface.withValues(alpha: 0.1)),
             const SizedBox(height: 16),
             Text(
-              'Characters',
+              context.t(S.characters),
               style: bodyStyle?.copyWith(
                 color: muted,
                 fontWeight: FontWeight.w700,

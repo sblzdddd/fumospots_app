@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../map/preview/map_preview_controller.dart';
 import '../feed/post_feed_controller.dart';
 import '../post_format.dart';
@@ -143,14 +144,14 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
             child: Column(
               children: [
                 Text(
-                  'Post unavailable',
+                  context.t(S.postUnavailableTitle),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _controller.error!,
+                  context.t(_controller.error!),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -177,7 +178,7 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: Text(context.t(message))),
     );
   }
 }

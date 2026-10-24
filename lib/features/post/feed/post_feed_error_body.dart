@@ -1,6 +1,8 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
+
 class PostFeedErrorBody extends StatelessWidget {
   const PostFeedErrorBody({
     super.key,
@@ -22,7 +24,7 @@ class PostFeedErrorBody extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                message,
+                context.t(message),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -31,7 +33,7 @@ class PostFeedErrorBody extends StatelessWidget {
                 onPressed: onRetry,
                 style: M3EButtonStyle.filled,
                 shape: M3EButtonShape.round,
-                child: const Text('Retry'),
+                child: Text(context.t(S.retry)),
               ),
             ],
           ),

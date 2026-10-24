@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../core/i18n/keys.dart';
 import '../../../core/services/fumo_client_error.dart';
 import '../../map/map_repository.dart';
 import '../post_model.dart';
@@ -135,9 +136,9 @@ class PostFeedController extends ChangeNotifier {
         return;
       }
       if (append) {
-        loadMoreError = "Couldn't load more posts.";
+        loadMoreError = S.postsLoadMoreFailed;
       } else {
-        error = 'Failed to load posts.';
+        error = S.postsLoadFailed;
       }
     } finally {
       if (request == _generation) {

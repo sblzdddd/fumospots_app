@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../core/i18n/keys.dart';
 import '../../../core/services/fumo_client_error.dart';
 import '../../auth/auth_controller.dart';
 import '../post_model.dart';
@@ -62,7 +63,7 @@ class PostDetailController extends ChangeNotifier {
       if (_postId != postId) {
         return;
       }
-      error = 'This post is unavailable.';
+      error = S.postUnavailable;
       loading = false;
       _notify();
     }
@@ -77,7 +78,7 @@ class PostDetailController extends ChangeNotifier {
 
     await _auth.init();
     if (!_auth.isSignedIn) {
-      return 'Sign in to like this post.';
+      return S.signInToLike;
     }
 
     liking = true;
@@ -111,7 +112,7 @@ class PostDetailController extends ChangeNotifier {
       }
       liking = false;
       _notify();
-      return 'Failed to update like.';
+      return S.likeUpdateFailed;
     }
   }
 

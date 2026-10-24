@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../post_card.dart';
 import '../post_masonry_grid.dart';
 import '../post_model.dart';
@@ -29,9 +30,9 @@ class PostFeedGrid extends StatelessWidget {
       loadingFirst: loadingFirst,
       columns: columns,
       bottomPadding: bottomPadding,
-      emptyMessage: hasFilter
-          ? 'No posts match these characters.'
-          : 'No posts yet.',
+      emptyMessage: context.t(
+        hasFilter ? S.noPostsMatchFilter : S.noPostsYet,
+      ),
       itemBuilder: (context, index) {
         final post = posts[index];
         return PostCard(

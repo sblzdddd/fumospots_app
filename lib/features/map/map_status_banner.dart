@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
+
 class MapStatusBanner extends StatelessWidget {
   const MapStatusBanner({
     super.key,
@@ -22,7 +24,7 @@ class MapStatusBanner extends StatelessWidget {
 
     if (empty) {
       return Text(
-        'No spots to show.',
+        context.t(S.noSpotsToShow),
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -43,9 +45,12 @@ class MapStatusBanner extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(error!, textAlign: TextAlign.center),
+              Text(context.t(error!), textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              FilledButton(onPressed: onRetry, child: const Text('Retry')),
+              FilledButton(
+                onPressed: onRetry,
+                child: Text(context.t(S.retry)),
+              ),
             ],
           ),
         ),

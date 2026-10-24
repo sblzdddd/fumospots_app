@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import 'post_feed_skeleton_card.dart';
 
 class PostFeedFooter extends StatelessWidget {
@@ -23,7 +24,7 @@ class PostFeedFooter extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              error!,
+              context.t(error!),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -32,7 +33,7 @@ class PostFeedFooter extends StatelessWidget {
               onPressed: onRetry,
               style: M3EButtonStyle.text,
               shape: M3EButtonShape.round,
-              child: const Text('Retry'),
+              child: Text(context.t(S.retry)),
             ),
           ],
         ),

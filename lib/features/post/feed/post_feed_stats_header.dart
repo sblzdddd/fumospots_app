@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../home/brand_logo.dart';
 import '../post_format.dart';
 
@@ -33,7 +34,7 @@ class PostFeedStatsHeader extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatTile(
-                  label: 'Posts',
+                  label: context.t(S.navPosts),
                   value: postCount,
                   loading: loading,
                   failed: failed,
@@ -42,7 +43,7 @@ class PostFeedStatsHeader extends StatelessWidget {
               ),
               Expanded(
                 child: _StatTile(
-                  label: 'Contributors',
+                  label: context.t(S.contributors),
                   value: contributorCount,
                   loading: loading,
                   failed: failed,
@@ -54,7 +55,7 @@ class PostFeedStatsHeader extends StatelessWidget {
           if (failed) ...[
             const SizedBox(height: 10),
             Text(
-              "Couldn't load stats.",
+              context.t(S.statsLoadFailed),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,

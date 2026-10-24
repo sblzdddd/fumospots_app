@@ -1,3 +1,4 @@
+import '../../core/i18n/keys.dart';
 import '../../core/services/fumo_client.dart';
 import '../../utils/json_converter.dart';
 import 'post_model.dart';
@@ -18,7 +19,7 @@ class PostRepository {
         'sort': sort.apiValue,
         if (offset > 0) 'offset': offset,
       },
-      fallback: 'Failed to load posts.',
+      fallback: S.postsLoadFailed,
     );
     return PostsPage.fromJson(toJsonMap(response.data));
   }
@@ -33,7 +34,7 @@ class PostRepository {
 
     final response = await _client.get(
       '/api/posts/$id',
-      fallback: 'This post is unavailable.',
+      fallback: S.postUnavailable,
     );
     final detail = PostDetail.fromJson(toJsonMap(response.data));
     _detailCache[id] = detail;
