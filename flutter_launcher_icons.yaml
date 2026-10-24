@@ -1,0 +1,24 @@
+# Generated from assets/src_icon.png (transparent).
+# Light icons use a white background. Dark mode uses #191919 where the
+# platform can switch: iOS 18+ via image_path_ios_dark_transparent, and
+# Android adaptive icons via res/values-night/colors.xml.
+# Re-apply macOS dark variants after regenerating; this tool rewrites
+# macos AppIcon Contents.json and drops appearance entries.
+flutter_launcher_icons:
+  image_path: assets/icon/icon_light.png
+  android: true
+  ios: true
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  background_color_ios: "#ffffff"
+  image_path_ios_dark_transparent: assets/icon/icon_dark.png
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: assets/src_icon.png
+  adaptive_icon_foreground_inset: 16
+  windows:
+    generate: true
+    image_path: assets/icon/icon_light.png
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: assets/icon/icon_light.png

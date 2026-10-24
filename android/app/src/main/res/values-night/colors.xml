@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode adaptive icon background. Light mode is #ffffff. -->
+    <color name="ic_launcher_background">#191919</color>
+</resources>
