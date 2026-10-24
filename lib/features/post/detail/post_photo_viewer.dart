@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/services/image_cache_service.dart';
 import '../post_model.dart';
+import 'post_photo_share.dart';
 
 /// Full-screen photo gallery (route, not a drag sheet — so pinch/pan win).
 Future<void> showPostPhotoViewer(
@@ -216,6 +217,10 @@ class _ZoomablePhotoState extends State<_ZoomablePhoto>
       onDoubleTapDown: _onDoubleTapDown,
       // Empty handler so the detector participates; zoom is driven by Down.
       onDoubleTap: () {},
+      onLongPress: () => showPostPhotoShareSheet(
+        context,
+        imageUrl: widget.url,
+      ),
       child: InteractiveViewer(
         transformationController: _transform,
         minScale: 1,

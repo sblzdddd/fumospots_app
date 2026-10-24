@@ -68,6 +68,11 @@ const Map<String, String> jaStrings = {
   S.postUnavailableTitle: '投稿を表示できません',
   S.signInToLike: 'いいねするにはログインしてください。',
   S.likeUpdateFailed: 'いいねの更新に失敗しました。',
+  S.sharePhoto: '写真を共有',
+  S.copyImageLink: '画像リンクをコピー',
+  S.shareImageLink: '画像リンクを共有',
+  S.linkCopied: 'リンクをコピーしました。',
+  S.shareFailed: 'この写真を共有できませんでした。',
 
   S.loginRegister: 'ログイン / 登録',
   S.authorId: '作者 ID',

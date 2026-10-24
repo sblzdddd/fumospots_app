@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../core/services/image_cache_service.dart';
 import '../../core/services/image_ratio.dart';
+import 'detail/post_photo_share.dart';
 import 'post_model.dart';
 
 /// Blurred thumb hero shown while post detail is still loading.
@@ -199,12 +200,15 @@ class _PostPhotosState extends State<PostPhotos> {
                         cacheManager: _images.cacheManager,
                       );
                       final onOpen = widget.onOpen;
-                      if (onOpen == null) {
-                        return pane;
-                      }
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => onOpen(photoIndex),
+                        onTap: onOpen == null
+                            ? null
+                            : () => onOpen(photoIndex),
+                        onLongPress: () => showPostPhotoShareSheet(
+                          context,
+                          imageUrl: uri,
+                        ),
                         child: pane,
                       );
                     },

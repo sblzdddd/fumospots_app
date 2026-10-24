@@ -74,6 +74,11 @@ abstract final class S {
   static const postUnavailableTitle = 'post.unavailableTitle';
   static const signInToLike = 'post.signInToLike';
   static const likeUpdateFailed = 'post.likeUpdateFailed';
+  static const sharePhoto = 'post.sharePhoto';
+  static const copyImageLink = 'post.copyImageLink';
+  static const shareImageLink = 'post.shareImageLink';
+  static const linkCopied = 'post.linkCopied';
+  static const shareFailed = 'post.shareFailed';
 
   // Auth
   static const loginRegister = 'auth.loginRegister';

@@ -70,6 +70,11 @@ const Map<String, String> enStrings = {
   S.postUnavailableTitle: 'Post unavailable',
   S.signInToLike: 'Sign in to like this post.',
   S.likeUpdateFailed: 'Failed to update like.',
+  S.sharePhoto: 'Share photo',
+  S.copyImageLink: 'Copy image link',
+  S.shareImageLink: 'Share image link',
+  S.linkCopied: 'Link copied.',
+  S.shareFailed: 'Could not share this photo.',
 
   S.loginRegister: 'Log in / Register',
   S.authorId: 'Author ID',

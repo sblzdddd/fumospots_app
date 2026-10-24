@@ -68,6 +68,11 @@ const Map<String, String> zhStrings = {
   S.postUnavailableTitle: '动态不可用',
   S.signInToLike: '请登录后再点赞。',
   S.likeUpdateFailed: '更新点赞失败。',
+  S.sharePhoto: '分享照片',
+  S.copyImageLink: '复制图片链接',
+  S.shareImageLink: '分享图片链接',
+  S.linkCopied: '链接已复制。',
+  S.shareFailed: '无法分享此照片。',
 
   S.loginRegister: '登录 / 注册',
   S.authorId: '作者 ID',
