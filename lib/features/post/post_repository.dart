@@ -39,4 +39,21 @@ class PostRepository {
     _detailCache[id] = detail;
     return detail;
   }
+
+  Future<PostLikeResult> setLiked(int id, {required bool liked}) async {
+    final response = await _client.put(
+      '/api/posts/$id/like',
+      data: {'liked': liked},
+      fallback: 'Failed to update like.',
+    );
+    final result = PostLikeResult.fromJson(toJsonMap(response.data));
+    final cached = _detailCache[id];
+    if (cached != null) {
+      _detailCache[id] = cached.copyWith(
+        likeCount: result.likeCount,
+        likedByViewer: result.likedByViewer,
+      );
+    }
+    return result;
+  }
 }

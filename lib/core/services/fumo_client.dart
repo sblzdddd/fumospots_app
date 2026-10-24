@@ -79,6 +79,24 @@ class FumoClient {
     );
   }
 
+  Future<Response<T>> put<T>(
+    String path, {
+    bool isAuth = false,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    String fallback = 'Request failed.',
+  }) {
+    return _request(
+      () => _dio(isAuth).put<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: _withFallback(options, fallback),
+      ),
+    );
+  }
+
   Dio _dio(bool isAuth) => isAuth ? _auth : _api;
 
   Options _withFallback(Options? options, String fallback) {

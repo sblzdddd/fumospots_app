@@ -163,9 +163,21 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
           PostDetailBody(
             detail: _controller.detail!,
             locale: deviceLocale(),
+            liking: _controller.liking,
+            onLike: _onLikePressed,
           ),
         const SizedBox(height: 48),
       ],
+    );
+  }
+
+  Future<void> _onLikePressed() async {
+    final message = await _controller.toggleLike();
+    if (!mounted || message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

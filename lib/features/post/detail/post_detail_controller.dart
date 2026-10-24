@@ -2,17 +2,23 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/services/fumo_client_error.dart';
+import '../../auth/auth_controller.dart';
 import '../post_model.dart';
 import '../post_repository.dart';
 
 class PostDetailController extends ChangeNotifier {
-  PostDetailController({PostRepository? repository})
-    : _repository = repository ?? GetIt.instance<PostRepository>();
+  PostDetailController({
+    PostRepository? repository,
+    AuthController? auth,
+  }) : _repository = repository ?? GetIt.instance<PostRepository>(),
+       _auth = auth ?? GetIt.instance<AuthController>();
 
   final PostRepository _repository;
+  final AuthController _auth;
 
   PostDetail? detail;
   bool loading = false;
+  bool liking = false;
   String? error;
   int photoIndex = 0;
 
@@ -28,6 +34,7 @@ class PostDetailController extends ChangeNotifier {
     final cached = _repository.peekDetail(postId);
     detail = cached;
     loading = cached == null;
+    liking = false;
     error = null;
     photoIndex = 0;
     _notify();
@@ -58,6 +65,53 @@ class PostDetailController extends ChangeNotifier {
       error = 'This post is unavailable.';
       loading = false;
       _notify();
+    }
+  }
+
+  /// Returns an error/notice message, or null on success.
+  Future<String?> toggleLike() async {
+    final current = detail;
+    if (current == null || liking) {
+      return null;
+    }
+
+    await _auth.init();
+    if (!_auth.isSignedIn) {
+      return 'Sign in to like this post.';
+    }
+
+    liking = true;
+    _notify();
+
+    try {
+      final result = await _repository.setLiked(
+        current.id,
+        liked: !current.likedByViewer,
+      );
+      if (_postId != current.id) {
+        return null;
+      }
+      detail = current.copyWith(
+        likeCount: result.likeCount,
+        likedByViewer: result.likedByViewer,
+      );
+      liking = false;
+      _notify();
+      return null;
+    } on FumoClientError catch (e) {
+      if (_postId != current.id) {
+        return null;
+      }
+      liking = false;
+      _notify();
+      return e.message;
+    } catch (_) {
+      if (_postId != current.id) {
+        return null;
+      }
+      liking = false;
+      _notify();
+      return 'Failed to update like.';
     }
   }
 

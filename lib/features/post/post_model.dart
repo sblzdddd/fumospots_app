@@ -158,4 +158,50 @@ class PostDetail {
       _$PostDetailFromJson(json);
 
   Map<String, dynamic> toJson() => _$PostDetailToJson(this);
+
+  PostDetail copyWith({
+    int? likeCount,
+    bool? likedByViewer,
+  }) {
+    return PostDetail(
+      id: id,
+      title: title,
+      body: body,
+      imageUrl: imageUrl,
+      thumbUrl: thumbUrl,
+      photos: photos,
+      likeCount: likeCount ?? this.likeCount,
+      likedByViewer: likedByViewer ?? this.likedByViewer,
+      placeName: placeName,
+      countryName: countryName,
+      regionName: regionName,
+      cityName: cityName,
+      publicLocation: publicLocation,
+      privacyMode: privacyMode,
+      capturedAt: capturedAt,
+      createdAt: createdAt,
+      characters: characters,
+      author: author,
+    );
+  }
+}
+
+class PostLikeResult {
+  const PostLikeResult({
+    required this.postId,
+    required this.likeCount,
+    required this.likedByViewer,
+  });
+
+  final int postId;
+  final int likeCount;
+  final bool likedByViewer;
+
+  factory PostLikeResult.fromJson(Map<String, dynamic> json) {
+    return PostLikeResult(
+      postId: (json['postId'] as num).toInt(),
+      likeCount: (json['likeCount'] as num).toInt(),
+      likedByViewer: json['likedByViewer'] as bool,
+    );
+  }
 }

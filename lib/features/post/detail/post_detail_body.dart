@@ -3,21 +3,32 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../character/filter/character_filter_controller.dart';
 import '../post_format.dart';
 import '../post_model.dart';
 
 class PostDetailBody extends StatelessWidget {
-  const PostDetailBody({super.key, required this.detail, required this.locale});
+  const PostDetailBody({
+    super.key,
+    required this.detail,
+    required this.locale,
+    this.liking = false,
+    this.onLike,
+  });
 
   final PostDetail detail;
   final String locale;
+  final bool liking;
+  final VoidCallback? onLike;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final bodyStyle = Theme.of(context).textTheme.bodyMedium;
     final muted = colors.onSurfaceVariant;
+    final liked = detail.likedByViewer;
+    final likeLabel = liked ? 'Unlike' : 'Like';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -38,7 +49,27 @@ class PostDetailBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _LikeChip(count: detail.likeCount, liked: detail.likedByViewer),
+              M3EButton.icon(
+                onPressed: liking ? null : onLike,
+                style: liked ? M3EButtonStyle.filled : M3EButtonStyle.tonal,
+                shape: M3EButtonShape.round,
+                size: M3EButtonSize.sm,
+                tooltip: likeLabel,
+                semanticLabel: likeLabel,
+                icon: liking
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : FaIcon(
+                        liked
+                            ? FontAwesomeIcons.solidHeart
+                            : FontAwesomeIcons.heart,
+                        size: 16,
+                      ),
+                label: Text('${detail.likeCount}'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -61,7 +92,10 @@ class PostDetailBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SubLocations(detail: detail),
-                Text(detail.placeName ?? 'Unnamed place', style: bodyStyle),
+                Text(
+                  detail.placeName ?? context.t(S.unnamedPlace),
+                  style: bodyStyle,
+                ),
               ],
             ),
           ),
@@ -127,38 +161,6 @@ class PostDetailBody extends StatelessWidget {
               ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _LikeChip extends StatelessWidget {
-  const _LikeChip({required this.count, required this.liked});
-
-  final int count;
-  final bool liked;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.onSurface.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FaIcon(
-            liked ? FontAwesomeIcons.solidHeart : FontAwesomeIcons.heart,
-            size: 16,
-            color: liked ? colors.error : colors.onSurfaceVariant,
-          ),
-          const SizedBox(width: 6),
-          Text('$count'),
         ],
       ),
     );
