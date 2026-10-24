@@ -12,6 +12,19 @@ class MapPoint {
   final String userId;
 }
 
+/// One-shot camera request from outside the map (e.g. post detail → map).
+class MapFocusTarget {
+  const MapFocusTarget({
+    required this.lat,
+    required this.lng,
+    required this.generation,
+  });
+
+  final double lat;
+  final double lng;
+  final int generation;
+}
+
 class MapPointPage {
   const MapPointPage({
     required this.points,

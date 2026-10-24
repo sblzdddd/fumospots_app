@@ -72,6 +72,7 @@ abstract final class S {
   static const authorNote = 'post.authorNote';
   static const characters = 'post.characters';
   static const postUnavailableTitle = 'post.unavailableTitle';
+  static const showInMap = 'post.showInMap';
   static const signInToLike = 'post.signInToLike';
   static const likeUpdateFailed = 'post.likeUpdateFailed';
   static const sharePhoto = 'post.sharePhoto';

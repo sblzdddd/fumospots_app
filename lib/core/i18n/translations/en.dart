@@ -68,6 +68,7 @@ const Map<String, String> enStrings = {
   S.authorNote: 'Author note',
   S.characters: 'Characters',
   S.postUnavailableTitle: 'Post unavailable',
+  S.showInMap: 'Show in map',
   S.signInToLike: 'Sign in to like this post.',
   S.likeUpdateFailed: 'Failed to update like.',
   S.sharePhoto: 'Share photo',

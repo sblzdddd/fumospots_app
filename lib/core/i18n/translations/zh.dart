@@ -66,6 +66,7 @@ const Map<String, String> zhStrings = {
   S.authorNote: '作者备注',
   S.characters: '角色',
   S.postUnavailableTitle: '动态不可用',
+  S.showInMap: '在地图中显示',
   S.signInToLike: '请登录后再点赞。',
   S.likeUpdateFailed: '更新点赞失败。',
   S.sharePhoto: '分享照片',

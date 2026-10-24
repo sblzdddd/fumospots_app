@@ -66,6 +66,7 @@ const Map<String, String> jaStrings = {
   S.authorNote: '作者メモ',
   S.characters: 'キャラクター',
   S.postUnavailableTitle: '投稿を表示できません',
+  S.showInMap: '地図で表示',
   S.signInToLike: 'いいねするにはログインしてください。',
   S.likeUpdateFailed: 'いいねの更新に失敗しました。',
   S.sharePhoto: '写真を共有',

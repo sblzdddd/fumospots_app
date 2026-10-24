@@ -15,10 +15,14 @@ import '../character/filter/character_filter_sync.dart';
 import '../post/detail/post_detail_sheet.dart';
 import 'map_click.dart';
 import 'map_feature_factory.dart';
+import 'map_model.dart';
 import 'map_points_controller.dart';
 import 'map_status_banner.dart';
 import 'map_style.dart';
 import 'preview/map_preview_annotations.dart';
+
+/// Zoom used when jumping to a post from the feed detail sheet.
+const mapShowInMapZoom = 14.0;
 
 class SpotMapView extends StatefulWidget {
   const SpotMapView({
@@ -26,11 +30,13 @@ class SpotMapView extends StatefulWidget {
     required this.contentInsetTop,
     required this.onOpenPost,
     this.selectedPostId,
+    this.focusTarget,
   });
 
   final double contentInsetTop;
   final ValueChanged<int> onOpenPost;
   final int? selectedPostId;
+  final MapFocusTarget? focusTarget;
 
   @override
   State<SpotMapView> createState() => _SpotMapViewState();
@@ -52,6 +58,7 @@ class _SpotMapViewState extends State<SpotMapView> {
   bool _mapSurfaceReady = false;
   bool _styleReady = false;
   int _mapAttempt = 0;
+  int? _appliedFocusGeneration;
   Timer? _styleRecovery;
 
   bool get _recoverBlankIosMap =>
@@ -128,6 +135,7 @@ class _SpotMapViewState extends State<SpotMapView> {
   Future<void> _onStyleLoaded(StyleController style) async {
     _styleReady = true;
     _styleRecovery?.cancel();
+    _tryApplyFocus();
     await _previews.attach(
       style,
       palette: _palette,
@@ -223,6 +231,28 @@ class _SpotMapViewState extends State<SpotMapView> {
     if (oldWidget.selectedPostId != widget.selectedPostId) {
       unawaited(_syncPreviews());
     }
+    if (oldWidget.focusTarget?.generation != widget.focusTarget?.generation) {
+      _tryApplyFocus();
+    }
+  }
+
+  void _tryApplyFocus() {
+    final target = widget.focusTarget;
+    final map = _map;
+    if (target == null || map == null || !_styleReady) {
+      return;
+    }
+    if (_appliedFocusGeneration == target.generation) {
+      return;
+    }
+    _appliedFocusGeneration = target.generation;
+    unawaited(
+      map.animateCamera(
+        center: Geographic(lon: target.lng, lat: target.lat),
+        zoom: mapShowInMapZoom,
+        nativeDuration: const Duration(milliseconds: 450),
+      ),
+    );
   }
 
   @override

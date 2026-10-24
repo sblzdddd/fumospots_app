@@ -1,3 +1,4 @@
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,7 +16,11 @@ import 'post_photo_viewer.dart';
 /// Fraction of the safe area the post sheet covers when it first opens.
 const postDetailSheetInitialSize = 0.75;
 
-Future<void> showPostDetailSheet(BuildContext context, int postId) {
+Future<void> showPostDetailSheet(
+  BuildContext context,
+  int postId, {
+  ValueChanged<PostLatLng>? onShowInMap,
+}) {
   final previewThumbUrl = resolvePostPreviewThumb(postId);
   return showModalBottomSheet<void>(
     context: context,
@@ -38,6 +43,7 @@ Future<void> showPostDetailSheet(BuildContext context, int postId) {
               postId: postId,
               previewThumbUrl: previewThumbUrl,
               scrollController: scrollController,
+              onShowInMap: onShowInMap,
             ),
           );
         },
@@ -70,11 +76,15 @@ class PostDetailSheet extends StatefulWidget {
     required this.postId,
     this.previewThumbUrl,
     this.scrollController,
+    this.onShowInMap,
   });
 
   final int postId;
   final String? previewThumbUrl;
   final ScrollController? scrollController;
+
+  /// When set (posts tab only), shows a full-width map jump control.
+  final ValueChanged<PostLatLng>? onShowInMap;
 
   @override
   State<PostDetailSheet> createState() => _PostDetailSheetState();
@@ -83,6 +93,10 @@ class PostDetailSheet extends StatefulWidget {
 class _PostDetailSheetState extends State<PostDetailSheet> {
   late final PostDetailController _controller =
       GetIt.instance<PostDetailController>();
+
+  static final _showInMapButton = M3EButtonDecoration.styleFrom(
+    minimumSize: const Size(double.infinity, 48),
+  );
 
   @override
   void initState() {
@@ -117,6 +131,9 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
     final previewThumb = widget.previewThumbUrl;
     final showLoadingHero =
         _controller.loading && previewThumb != null && photos.isEmpty;
+    final location = _controller.detail?.publicLocation;
+    final showInMap =
+        widget.onShowInMap != null && location != null;
 
     // Same list content as before — only the controller is wired so the sheet
     // can take over the drag when the list is at the top.
@@ -174,9 +191,32 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
             liking: _controller.liking,
             onLike: _onLikePressed,
           ),
+        if (showInMap)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+            child: M3EButton.icon(
+              onPressed: () => _onShowInMap(location),
+              style: M3EButtonStyle.filled,
+              size: M3EButtonSize.md,
+              shape: M3EButtonShape.round,
+              decoration: _showInMapButton,
+              icon: const FaIcon(FontAwesomeIcons.mapLocationDot, size: 16),
+              label: Text(context.t(S.showInMap)),
+            ),
+          ),
         const SizedBox(height: 48),
       ],
     );
+  }
+
+  void _onShowInMap(PostLatLng location) {
+    final onShowInMap = widget.onShowInMap;
+    if (onShowInMap == null) {
+      return;
+    }
+    // Capture before pop so the opener can switch tabs after the sheet closes.
+    onShowInMap(location);
+    Navigator.of(context).pop();
   }
 
   Future<void> _onLikePressed() async {

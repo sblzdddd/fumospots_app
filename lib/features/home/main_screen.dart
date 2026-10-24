@@ -7,9 +7,11 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/i18n/i18n.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login/auth_login_view.dart';
+import '../map/map_model.dart';
 import '../map/spot_map_view.dart';
 import '../post/detail/post_detail_sheet.dart';
 import '../post/feed/post_feed_view.dart';
+import '../post/post_model.dart';
 import '../settings/visual_settings_controller.dart';
 import '../upload/upload_view.dart';
 import '../user/user_view.dart';
@@ -28,7 +30,10 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   int? _selectedPostId;
   bool _mapVisited = false;
+  MapFocusTarget? _mapFocus;
   final GlobalKey _feedKey = GlobalKey();
+
+  bool get _onPostsPage => _selectedIndex == 0;
 
   @override
   void initState() {
@@ -54,10 +59,32 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _openPost(int id) async {
     setState(() => _selectedPostId = id);
-    await showPostDetailSheet(context, id);
-    if (mounted) {
-      setState(() => _selectedPostId = null);
+    PostLatLng? showInMapAt;
+    await showPostDetailSheet(
+      context,
+      id,
+      onShowInMap: _onPostsPage && mapPageEnabled
+          ? (location) => showInMapAt = location
+          : null,
+    );
+    if (!mounted) {
+      return;
     }
+    final focus = showInMapAt;
+    if (focus != null) {
+      setState(() {
+        _selectedIndex = 1;
+        _mapVisited = true;
+        _selectedPostId = id;
+        _mapFocus = MapFocusTarget(
+          lat: focus.lat,
+          lng: focus.lng,
+          generation: (_mapFocus?.generation ?? 0) + 1,
+        );
+      });
+      return;
+    }
+    setState(() => _selectedPostId = null);
   }
 
   void _onDestinationSelected(int index) {
@@ -154,6 +181,7 @@ class _MainScreenState extends State<MainScreen> {
                 SpotMapView(
                   contentInsetTop: topInset,
                   selectedPostId: _selectedPostId,
+                  focusTarget: _mapFocus,
                   onOpenPost: _openPost,
                 )
               else
