@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/config/fumospots_config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/services/fumo_client_error.dart';
 import '../auth_controller.dart';
 import '../auth_flow.dart';
@@ -88,15 +89,15 @@ class _AuthLoginViewState extends State<AuthLoginView> {
   }
 
 
-  String get _submitLabel {
+  String _submitLabel(BuildContext context) {
     if (_auth.busy) {
-      return 'Processing...';
+      return context.t(S.processing);
     }
     return switch (_mode) {
-      AuthEmailMode.password => 'Log in',
-      AuthEmailMode.link => 'Send login link',
-      AuthEmailMode.register => 'Register',
-      null => 'Log in / Register',
+      AuthEmailMode.password => context.t(S.logIn),
+      AuthEmailMode.link => context.t(S.sendLoginLink),
+      AuthEmailMode.register => context.t(S.register),
+      null => context.t(S.loginRegister),
     };
   }
 
@@ -147,21 +148,20 @@ class _AuthLoginViewState extends State<AuthLoginView> {
   bool _validate() {
     final mode = _mode;
     if (mode == null) {
-      _formError = 'Choose an email method first.';
+      _formError = S.chooseEmailMethod;
       return false;
     }
     if (_email.text.trim().isEmpty) {
-      _formError = 'Please enter an email address.';
+      _formError = S.enterEmail;
       return false;
     }
     final needsPassword = mode != AuthEmailMode.link;
     if (needsPassword && _password.text.length < authMinPasswordLength) {
-      _formError =
-          'Password must be at least $authMinPasswordLength characters.';
+      _formError = S.passwordTooShort;
       return false;
     }
     if (mode == AuthEmailMode.register && _password.text != _confirm.text) {
-      _formError = 'The passwords do not match.';
+      _formError = S.passwordsDoNotMatch;
       return false;
     }
     return true;
@@ -242,7 +242,9 @@ class _AuthLoginViewState extends State<AuthLoginView> {
             initialUrl: url,
             callbackUri: _links.loginRedirect,
             codeVerifier: pkce.verifier,
-            title: _registering ? option.registerLabel : option.loginLabel,
+            title: context.t(
+              _registering ? option.registerLabelKey : option.loginLabelKey,
+            ),
           ),
         ),
       );
@@ -253,7 +255,9 @@ class _AuthLoginViewState extends State<AuthLoginView> {
         _leaveIfSignedIn();
         return;
       }
-      setState(() => _formError = result.message ?? option.failureMessage);
+      setState(
+        () => _formError = result.message ?? option.failureMessageKey,
+      );
     } on FumoClientError catch (error) {
       if (mounted) {
         setState(() => _formError = error.message);
@@ -264,7 +268,7 @@ class _AuthLoginViewState extends State<AuthLoginView> {
   Future<void> _continueEmail() async {
     final value = _callback.text.trim();
     if (value.isEmpty) {
-      setState(() => _formError = 'Paste the email link or enter the code.');
+      setState(() => _formError = S.pasteEmailLinkOrCode);
       return;
     }
     setState(() => _formError = null);
@@ -275,7 +279,7 @@ class _AuthLoginViewState extends State<AuthLoginView> {
           builder: (_) => AuthBrowserPage(
             initialUrl: uri,
             callbackUri: _links.loginRedirect,
-            title: 'Email link',
+            title: context.t(S.emailLink),
           ),
         ),
       );
@@ -370,7 +374,9 @@ class _AuthLoginViewState extends State<AuthLoginView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_setupUsername ? 'Author ID' : 'Log in / Register'),
+        title: Text(
+          context.t(_setupUsername ? S.authorId : S.loginRegister),
+        ),
       ),
       body: ListenableBuilder(
         listenable: _auth,
@@ -413,7 +419,7 @@ class _AuthLoginViewState extends State<AuthLoginView> {
                       error: _formError,
                       awaitingEmail: _awaitingEmail,
                       canSubmit: _canSubmit,
-                      submitLabel: _submitLabel,
+                      submitLabel: _submitLabel(context),
                       onSubmit: _submit,
                       onContinue: _continueEmail,
                       onChanged: () => setState(() {}),

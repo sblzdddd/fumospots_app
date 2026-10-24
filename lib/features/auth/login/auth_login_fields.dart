@@ -2,6 +2,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import 'auth_login_methods.dart';
 import 'auth_login_mode.dart';
 import 'auth_login_notice.dart';
@@ -63,10 +64,10 @@ class AuthLoginFields extends StatelessWidget {
                 textInputAction: link
                     ? TextInputAction.done
                     : TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Email address',
-                  hintText: 'you@example.com',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.t(S.emailAddress),
+                  hintText: context.t(S.emailHint),
+                  border: const OutlineInputBorder(),
                 ),
                 onChanged: (_) => onChanged(),
                 onSubmitted: (_) {
@@ -89,10 +90,10 @@ class AuthLoginFields extends StatelessWidget {
                   textInputAction: register
                       ? TextInputAction.next
                       : TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'At least 8 characters',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.t(S.password),
+                    hintText: context.t(S.passwordHint),
+                    border: const OutlineInputBorder(),
                   ),
                   onSubmitted: (_) {
                     if (!register) {
@@ -109,10 +110,10 @@ class AuthLoginFields extends StatelessWidget {
                   obscureText: true,
                   autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm password',
-                    hintText: 'Enter the password again',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.t(S.confirmPassword),
+                    hintText: context.t(S.confirmPasswordHint),
+                    border: const OutlineInputBorder(),
                   ),
                   onSubmitted: (_) => onSubmit(),
                 ),
@@ -131,10 +132,10 @@ class AuthLoginFields extends StatelessWidget {
             enabled: !busy,
             minLines: 1,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Email link or code',
-              hintText: 'Paste the link, or enter the code',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.t(S.emailLinkOrCode),
+              hintText: context.t(S.emailLinkOrCodeHint),
+              border: const OutlineInputBorder(),
             ),
             onChanged: (_) => onChanged(),
           ),
@@ -145,7 +146,9 @@ class AuthLoginFields extends StatelessWidget {
             size: M3EButtonSize.md,
             shape: M3EButtonShape.round,
             decoration: authWideButtonDecoration,
-            child: Text(busy ? 'Processing...' : 'Continue'),
+            child: Text(
+              context.t(busy ? S.processing : S.continueAction),
+            ),
           ),
         ],
         if (error != null) ...[

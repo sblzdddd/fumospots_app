@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../core/i18n/keys.dart';
 import '../../core/services/fumo_client_error.dart';
 import 'auth_exception.dart';
 import 'auth_flow.dart';
@@ -81,7 +82,7 @@ class AuthController extends ChangeNotifier {
     final normalizedEmail = _normalizeEmail(email);
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) {
-      throw const AuthException('Email verification code is required.');
+      throw const AuthException(S.emailCodeRequired);
     }
     return _run(() async {
       final nextSession = await _repository.verifyEmailCode(
@@ -127,9 +128,7 @@ class AuthController extends ChangeNotifier {
   Future<void> saveUsername(String username) {
     final normalized = username.trim().toLowerCase();
     if (!authUsernamePattern.hasMatch(normalized)) {
-      throw const AuthException(
-        'Author ID must be 3-24 letters, numbers, underscores, or hyphens.',
-      );
+      throw const AuthException(S.authorIdInvalid);
     }
     return _run(() async {
       await _repository.saveUsername(normalized);
@@ -141,7 +140,7 @@ class AuthController extends ChangeNotifier {
   String _normalizeEmail(String email) {
     final normalizedEmail = email.trim();
     if (normalizedEmail.isEmpty) {
-      throw const AuthException('Please enter an email address.');
+      throw const AuthException(S.enterEmail);
     }
     return normalizedEmail;
   }
@@ -203,7 +202,7 @@ class AuthController extends ChangeNotifier {
     if (applied || user != null) {
       return;
     }
-    throw AuthException(errorMessage ?? 'Could not load your profile.');
+    throw AuthException(errorMessage ?? S.profileLoadFailed);
   }
 
   Future<bool> _applySession(AuthSession nextSession) async {

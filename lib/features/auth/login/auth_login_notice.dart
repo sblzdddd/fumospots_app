@@ -1,5 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
+import '../auth_flow.dart';
+
 class AuthLoginNotice extends StatelessWidget {
   const AuthLoginNotice({
     super.key,
@@ -26,7 +29,13 @@ class AuthLoginNotice extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(message, style: TextStyle(color: foreground)),
+      child: Text(
+        context.t(
+          message,
+          params: {'count': '$authMinPasswordLength'},
+        ),
+        style: TextStyle(color: foreground),
+      ),
     );
   }
 }

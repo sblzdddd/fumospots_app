@@ -2,6 +2,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import 'auth_login_mode.dart';
 
 final authWideButtonDecoration = M3EButtonDecoration.styleFrom(
@@ -103,13 +104,13 @@ class AuthLoginMethods extends StatelessWidget {
               width: first,
               enabled: !busy,
               icon: const FaIcon(FontAwesomeIcons.rightToBracket, size: 14),
-              label: const Text('Log in'),
+              label: Text(context.t(S.logIn)),
             ),
             M3EToggleButtonGroupAction(
               width: second,
               enabled: !busy,
               icon: const FaIcon(FontAwesomeIcons.userPlus, size: 14),
-              label: const Text('Register'),
+              label: Text(context.t(S.register)),
             ),
           ],
         ),
@@ -122,7 +123,11 @@ class AuthLoginMethods extends StatelessWidget {
             shape: M3EButtonShape.round,
             decoration: authWideButtonDecoration,
             icon: FaIcon(option.icon, size: 16),
-            label: Text(registering ? option.registerLabel : option.loginLabel),
+            label: Text(
+              context.t(
+                registering ? option.registerLabelKey : option.loginLabelKey,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -135,13 +140,13 @@ class AuthLoginMethods extends StatelessWidget {
               width: first,
               enabled: !busy,
               icon: const FaIcon(FontAwesomeIcons.envelope, size: 14),
-              label: const Text('Email'),
+              label: Text(context.t(S.email)),
             ),
             M3EToggleButtonGroupAction(
               width: second,
               enabled: !busy,
               icon: const FaIcon(FontAwesomeIcons.key, size: 14),
-              label: const Text('Password'),
+              label: Text(context.t(S.password)),
             ),
           ],
         ),

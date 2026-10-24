@@ -1,5 +1,7 @@
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../../core/i18n/keys.dart';
+
 enum AuthLoginSection { login, register }
 
 enum AuthEmailMode { password, link, register }
@@ -7,42 +9,42 @@ enum AuthEmailMode { password, link, register }
 class AuthOAuthOption {
   const AuthOAuthOption({
     required this.provider,
-    required this.loginLabel,
-    required this.registerLabel,
+    required this.loginLabelKey,
+    required this.registerLabelKey,
     required this.icon,
-    required this.failureMessage,
+    required this.failureMessageKey,
     this.scopes,
   });
 
   final String provider;
-  final String loginLabel;
-  final String registerLabel;
+  final String loginLabelKey;
+  final String registerLabelKey;
   final FaIconData icon;
-  final String failureMessage;
+  final String failureMessageKey;
   final String? scopes;
 }
 
 const authOAuthOptions = [
   AuthOAuthOption(
     provider: 'github',
-    loginLabel: 'GitHub login',
-    registerLabel: 'Register with GitHub',
+    loginLabelKey: S.githubLogin,
+    registerLabelKey: S.githubRegister,
     icon: FontAwesomeIcons.github,
-    failureMessage: 'GitHub login failed.',
+    failureMessageKey: S.githubFailed,
   ),
   AuthOAuthOption(
     provider: 'google',
-    loginLabel: 'Google login',
-    registerLabel: 'Register with Google',
+    loginLabelKey: S.googleLogin,
+    registerLabelKey: S.googleRegister,
     icon: FontAwesomeIcons.google,
-    failureMessage: 'Google login failed.',
+    failureMessageKey: S.googleFailed,
   ),
   AuthOAuthOption(
     provider: 'azure',
-    loginLabel: 'Microsoft login',
-    registerLabel: 'Register with Microsoft',
+    loginLabelKey: S.microsoftLogin,
+    registerLabelKey: S.microsoftRegister,
     icon: FontAwesomeIcons.microsoft,
-    failureMessage: 'Microsoft login failed.',
+    failureMessageKey: S.microsoftFailed,
     scopes: 'email',
   ),
 ];

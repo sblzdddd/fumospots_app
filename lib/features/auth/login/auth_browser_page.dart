@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../../core/services/fumo_client_error.dart';
 import '../auth_controller.dart';
 import '../auth_exception.dart';
@@ -17,7 +18,7 @@ class AuthBrowserPage extends StatefulWidget {
     required this.initialUrl,
     required this.callbackUri,
     this.codeVerifier,
-    this.title = 'Sign in',
+    this.title = S.signIn,
   });
 
   final Uri initialUrl;
@@ -366,9 +367,9 @@ class _AuthBrowserPageState extends State<AuthBrowserPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(context.t(widget.title)),
         leading: IconButton(
-          tooltip: 'Close',
+          tooltip: context.t(S.close),
           onPressed: _close,
           icon: const BackButtonIcon(),
         ),
@@ -386,7 +387,7 @@ class _AuthBrowserPageState extends State<AuthBrowserPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text(
-                    _pageError!,
+                    context.t(_pageError!),
                     style: TextStyle(color: cs.onErrorContainer),
                   ),
                 ),
@@ -413,12 +414,15 @@ class _AuthBrowserPageState extends State<AuthBrowserPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _error!,
+                        context.t(_error!),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 16),
-                      FilledButton(onPressed: _close, child: const Text('Close')),
+                      FilledButton(
+                        onPressed: _close,
+                        child: Text(context.t(S.close)),
+                      ),
                     ],
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import 'auth_login_methods.dart';
 import 'auth_login_notice.dart';
 
@@ -38,11 +39,11 @@ class AuthUsernameForm extends StatelessWidget {
           enabled: !busy,
           textInputAction: TextInputAction.done,
           autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'Author ID',
-            hintText: 'reimu_tabi',
-            helperText: 'Examples: reimu_tabi, alice_fumo, world_trip_01.',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.t(S.authorId),
+            hintText: context.t(S.authorIdHint),
+            helperText: context.t(S.authorIdHelper),
+            border: const OutlineInputBorder(),
           ),
           onSubmitted: (_) => onSave(),
           onChanged: (_) => onChanged(),
@@ -58,7 +59,7 @@ class AuthUsernameForm extends StatelessWidget {
           size: M3EButtonSize.md,
           shape: M3EButtonShape.round,
           decoration: authWideButtonDecoration,
-          child: Text(busy ? 'Saving…' : 'Save author ID'),
+          child: Text(context.t(busy ? S.saving : S.saveAuthorId)),
         ),
         const SizedBox(height: 8),
         M3EButton(
@@ -67,7 +68,7 @@ class AuthUsernameForm extends StatelessWidget {
           size: M3EButtonSize.md,
           shape: M3EButtonShape.round,
           decoration: authWideButtonDecoration,
-          child: const Text('Sign out'),
+          child: Text(context.t(S.signOut)),
         ),
       ],
     );
