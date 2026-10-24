@@ -1,9 +1,10 @@
-import 'dart:ui';
+import 'package:get_it/get_it.dart';
 
+import '../../core/i18n/i18n.dart';
 import 'post_model.dart';
 
 String deviceLocale() {
-  return PlatformDispatcher.instance.locale.toLanguageTag();
+  return GetIt.instance<LocaleController>().locale.toLanguageTag();
 }
 
 String characterName(PostCharacter character, String locale) {
@@ -19,12 +20,12 @@ String characterName(PostCharacter character, String locale) {
 
 String formatDateTime(String? value, String locale) {
   if (value == null || value.isEmpty) {
-    return 'Not provided';
+    return _t(S.notProvided);
   }
 
   final date = DateTime.tryParse(value);
   if (date == null) {
-    return 'Not provided';
+    return _t(S.notProvided);
   }
 
   return date.toLocal().toString().substring(0, 16);
@@ -32,7 +33,7 @@ String formatDateTime(String? value, String locale) {
 
 String formatLatLng(PostLatLng? value) {
   if (value == null) {
-    return 'Not set';
+    return _t(S.notSet);
   }
   return '${value.lat.toStringAsFixed(5)}, ${value.lng.toStringAsFixed(5)}';
 }
@@ -60,4 +61,9 @@ List<PostPhoto> displayPhotos(PostDetail post) {
     return [PostPhoto(imageUrl: post.imageUrl, thumbUrl: post.thumbUrl)];
   }
   return const [];
+}
+
+String _t(String key) {
+  final language = GetIt.instance<LocaleController>().language;
+  return AppLocalizations(language).t(key);
 }

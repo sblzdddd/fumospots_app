@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/di/locator.dart';
+import 'core/i18n/app_localizations.dart';
+import 'core/i18n/locale_controller.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/home/main_screen.dart';
 import 'features/settings/theme_controller.dart';
@@ -18,6 +20,7 @@ Future<void> main() async {
   await Future.wait([
     getIt<ThemeController>().init(),
     getIt<VisualSettingsController>().init(),
+    getIt<LocaleController>().init(),
   ]);
   getIt<AuthController>().init();
   runApp(const MyApp());
@@ -29,16 +32,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeController = getIt<ThemeController>();
+    final localeController = getIt<LocaleController>();
     final colorThemes = FumoColorThemes(context);
 
     return ListenableBuilder(
-      listenable: themeController,
+      listenable: Listenable.merge([themeController, localeController]),
       builder: (context, _) {
         return MaterialApp(
           title: 'Fumospots',
           theme: colorThemes.buildLightTheme(const Color(0xFF31a567)),
           darkTheme: colorThemes.buildDarkTheme(const Color(0xFF31a567)),
           themeMode: themeController.mode,
+          locale: localeController.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           builder: (context, child) {
             return MediaQuery(
               data: MediaQuery.of(

@@ -19,6 +19,7 @@ import '../../features/settings/visual_settings_controller.dart';
 import '../../features/user/user_controller.dart';
 import '../../features/user/user_repository.dart';
 import '../config/fumospots_config.dart';
+import '../i18n/locale_controller.dart';
 import '../services/fumo_client.dart';
 import '../services/fumo_store.dart';
 import '../services/image_cache_service.dart';
@@ -53,6 +54,10 @@ void setupDI() {
     getIt.registerLazySingleton<VisualSettingsController>(
       VisualSettingsController.new,
     );
+  }
+
+  if (!getIt.isRegistered<LocaleController>()) {
+    getIt.registerLazySingleton<LocaleController>(LocaleController.new);
   }
 
   // Auth
