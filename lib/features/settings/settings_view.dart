@@ -4,6 +4,7 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/services/image_cache_service.dart';
+import '../home/bottom_navigation.dart';
 import 'theme_controller.dart';
 import 'visual_settings_controller.dart';
 
@@ -103,6 +104,34 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ],
           ),
+          if (mapPageEnabled) ...[
+            const SizedBox(height: 8),
+            const _SectionLabel('Start page'),
+            const SizedBox(height: 8),
+            M3EToggleButtonGroup(
+              type: M3EButtonGroupType.connected,
+              style: M3EButtonStyle.tonal,
+              shape: M3EButtonShape.round,
+              selectedIndex: _visual.startPage == HomeStartPage.map ? 1 : 0,
+              onSelectedIndexChanged: (index) {
+                if (index != null) {
+                  _visual.setStartPage(
+                    index == 0 ? HomeStartPage.posts : HomeStartPage.map,
+                  );
+                }
+              },
+              actions: const [
+                M3EToggleButtonGroupAction(
+                  label: Text('Posts'),
+                  icon: FaIcon(FontAwesomeIcons.tableCellsLarge, size: 14),
+                ),
+                M3EToggleButtonGroupAction(
+                  label: Text('Map'),
+                  icon: FaIcon(FontAwesomeIcons.map, size: 14),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           const _SectionLabel('Visual'),
           M3ESegmentedColumn(

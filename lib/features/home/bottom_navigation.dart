@@ -1,8 +1,20 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// Map tab is off on desktop (MapLibre still needs webview there).
+bool get mapPageEnabled {
+  if (kIsWeb) {
+    return true;
+  }
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.macOS || TargetPlatform.windows => false,
+    _ => true,
+  };
+}
 
 /// Floating dock child for [BottomBar]: Posts, Map, Profile, then Add.
 class FloatingBottomDock extends StatelessWidget {

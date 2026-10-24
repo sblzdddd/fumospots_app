@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,17 +13,6 @@ import '../settings/visual_settings_controller.dart';
 import '../upload/upload_view.dart';
 import '../user/user_view.dart';
 import 'bottom_navigation.dart';
-
-/// Map tab is off on desktop (MapLibre still needs webview there).
-bool get _mapPageEnabled {
-  if (kIsWeb) {
-    return true;
-  }
-  return switch (defaultTargetPlatform) {
-    TargetPlatform.macOS || TargetPlatform.windows => false,
-    _ => true,
-  };
-}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -44,6 +32,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    if (mapPageEnabled && _visual.startPage == HomeStartPage.map) {
+      _selectedIndex = 1;
+      _mapVisited = true;
+    }
     _visual.addListener(_onChanged);
   }
 
@@ -70,7 +62,7 @@ class _MainScreenState extends State<MainScreen> {
   void _onDestinationSelected(int index) {
     setState(() {
       _selectedIndex = index;
-      if (_mapPageEnabled && index == 1) {
+      if (mapPageEnabled && index == 1) {
         _mapVisited = true;
       }
     });
@@ -156,7 +148,7 @@ class _MainScreenState extends State<MainScreen> {
               contentInsetTop: topInset,
               onOpenPost: _openPost,
             ),
-            if (_mapPageEnabled)
+            if (mapPageEnabled)
               if (_mapVisited)
                 SpotMapView(
                   contentInsetTop: topInset,
@@ -173,7 +165,7 @@ class _MainScreenState extends State<MainScreen> {
           onDestinationSelected: _onDestinationSelected,
           onAddPressed: _onAddPressed,
           blurEnabled: _visual.blurEnabled,
-          showMap: _mapPageEnabled,
+          showMap: mapPageEnabled,
         ),
       ),
     );
