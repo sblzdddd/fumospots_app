@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../../core/services/image_cache_service.dart';
 import '../home/bottom_navigation.dart';
 import 'theme_controller.dart';
@@ -19,8 +20,12 @@ class _SettingsViewState extends State<SettingsView> {
   final ThemeController _theme = GetIt.instance<ThemeController>();
   final VisualSettingsController _visual =
       GetIt.instance<VisualSettingsController>();
+  final LocaleController _locale = GetIt.instance<LocaleController>();
   final ImageCacheService _images = GetIt.instance<ImageCacheService>();
+  final M3EDropdownController<AppLanguage> _languageDropdown =
+      M3EDropdownController<AppLanguage>();
   bool _clearing = false;
+  bool _syncingLanguage = false;
 
   static const _themeModes = [
     ThemeMode.light,
@@ -33,12 +38,15 @@ class _SettingsViewState extends State<SettingsView> {
     super.initState();
     _theme.addListener(_onChanged);
     _visual.addListener(_onChanged);
+    _locale.addListener(_onLocaleChanged);
   }
 
   @override
   void dispose() {
     _theme.removeListener(_onChanged);
     _visual.removeListener(_onChanged);
+    _locale.removeListener(_onLocaleChanged);
+    _languageDropdown.dispose();
     super.dispose();
   }
 
@@ -46,6 +54,46 @@ class _SettingsViewState extends State<SettingsView> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _onLocaleChanged() {
+    _syncLanguageDropdown();
+    _onChanged();
+  }
+
+  void _syncLanguageDropdown() {
+    if (_syncingLanguage ||
+        !_languageDropdown.initialized ||
+        _languageDropdown.items.isEmpty) {
+      return;
+    }
+    final wanted = _locale.language;
+    final current = _languageDropdown.selectedValues;
+    if (current.length == 1 && current.first == wanted) {
+      return;
+    }
+    _syncingLanguage = true;
+    _languageDropdown.clearAll();
+    _languageDropdown.selectWhere((item) => item.value == wanted);
+    _syncingLanguage = false;
+  }
+
+  List<M3EDropdownItem<AppLanguage>> _languageItems(BuildContext context) {
+    return [
+      for (final language in AppLanguage.values)
+        M3EDropdownItem<AppLanguage>(
+          value: language,
+          label: context.t(language.labelKey),
+          selected: language == _locale.language,
+        ),
+    ];
+  }
+
+  void _onLanguageChanged(List<M3EDropdownItem<AppLanguage>> items) {
+    if (_syncingLanguage || items.isEmpty) {
+      return;
+    }
+    _locale.setLanguage(items.first.value);
   }
 
   Future<void> _clearImageCache() async {
@@ -59,7 +107,7 @@ class _SettingsViewState extends State<SettingsView> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image cache cleared.')),
+        SnackBar(content: Text(context.t(S.imageCacheCleared))),
       );
     } finally {
       if (mounted) {
@@ -73,11 +121,51 @@ class _SettingsViewState extends State<SettingsView> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.t(S.settings))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const _SectionLabel('Appearance'),
+          _SectionLabel(context.t(S.settingsLanguage)),
+          const SizedBox(height: 8),
+          M3EDropdownMenu<AppLanguage>(
+            items: _languageItems(context),
+            controller: _languageDropdown,
+            singleSelect: true,
+            searchEnabled: false,
+            showChipAnimation: false,
+            maxSelections: 1,
+            containerRadius: 28,
+            haptic: M3EHapticFeedback.light,
+            fieldStyle: M3EDropdownFieldStyle(
+              hintText: context.t(S.settingsLanguage),
+              showClearIcon: false,
+              padding: const EdgeInsets.all(14),
+            ),
+            dropdownStyle: M3EDropdownStyle(
+              elevation: 4,
+              maxHeight: 280,
+              marginTop: 4,
+              expandDirection: ExpandDirection.auto,
+              contentPadding: const EdgeInsets.all(8),
+              backgroundColor: cs.surfaceContainer,
+            ),
+            itemStyle: M3EDropdownItemStyle(
+              backgroundColor: cs.surfaceContainerHigh,
+              selectedBackgroundColor: cs.secondaryContainer,
+              selectedTextColor: cs.onSecondaryContainer,
+              textColor: cs.onSurface,
+              outerRadius: 18,
+              innerRadius: 6,
+              itemGap: 3,
+              itemPadding: const EdgeInsets.all(12),
+              selectedIcon: Icon(
+                Icons.check_rounded,
+                color: cs.onSecondaryContainer,
+              ),
+            ),
+            onSelectionChanged: _onLanguageChanged,
+          ),
+          _SectionLabel(context.t(S.settingsAppearance)),
           const SizedBox(height: 8),
           M3EToggleButtonGroup(
             type: M3EButtonGroupType.connected,
@@ -89,24 +177,24 @@ class _SettingsViewState extends State<SettingsView> {
                 _theme.setMode(_themeModes[index]);
               }
             },
-            actions: const [
+            actions: [
               M3EToggleButtonGroupAction(
-                label: Text('Light'),
-                icon: FaIcon(FontAwesomeIcons.sun, size: 14),
+                label: Text(context.t(S.themeLight)),
+                icon: const FaIcon(FontAwesomeIcons.sun, size: 14),
               ),
               M3EToggleButtonGroupAction(
-                label: Text('Dark'),
-                icon: FaIcon(FontAwesomeIcons.moon, size: 14),
+                label: Text(context.t(S.themeDark)),
+                icon: const FaIcon(FontAwesomeIcons.moon, size: 14),
               ),
               M3EToggleButtonGroupAction(
-                label: Text('System'),
-                icon: FaIcon(FontAwesomeIcons.mobile, size: 14),
+                label: Text(context.t(S.themeSystem)),
+                icon: const FaIcon(FontAwesomeIcons.mobile, size: 14),
               ),
             ],
           ),
           if (mapPageEnabled) ...[
             const SizedBox(height: 8),
-            const _SectionLabel('Start page'),
+            _SectionLabel(context.t(S.settingsStartPage)),
             const SizedBox(height: 8),
             M3EToggleButtonGroup(
               type: M3EButtonGroupType.connected,
@@ -120,20 +208,20 @@ class _SettingsViewState extends State<SettingsView> {
                   );
                 }
               },
-              actions: const [
+              actions: [
                 M3EToggleButtonGroupAction(
-                  label: Text('Posts'),
-                  icon: FaIcon(FontAwesomeIcons.tableCellsLarge, size: 14),
+                  label: Text(context.t(S.navPosts)),
+                  icon: const FaIcon(FontAwesomeIcons.tableCellsLarge, size: 14),
                 ),
                 M3EToggleButtonGroupAction(
-                  label: Text('Map'),
-                  icon: FaIcon(FontAwesomeIcons.map, size: 14),
+                  label: Text(context.t(S.navMap)),
+                  icon: const FaIcon(FontAwesomeIcons.map, size: 14),
                 ),
               ],
             ),
           ],
           const SizedBox(height: 8),
-          const _SectionLabel('Visual'),
+          _SectionLabel(context.t(S.settingsVisual)),
           M3ESegmentedColumn(
             selectionMode: M3ESelectionMode.multiple,
             selectionTrigger: M3ESelectionTrigger.none,
@@ -155,14 +243,14 @@ class _SettingsViewState extends State<SettingsView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Blur effects',
+                          context.t(S.blurEffects),
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _visual.blurEnabled
-                              ? 'Blur behind the navigation bar'
-                              : 'Solid navigation bar',
+                          context.t(
+                            _visual.blurEnabled ? S.blurOn : S.blurOff,
+                          ),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
@@ -182,7 +270,7 @@ class _SettingsViewState extends State<SettingsView> {
             ],
           ),
           const SizedBox(height: 8),
-          const _SectionLabel('Storage'),
+          _SectionLabel(context.t(S.settingsStorage)),
           M3ESegmentedColumn(
             splashFactory: InkSparkle.splashFactory,
             onTap: _clearing ? null : (_) => _clearImageCache(),
@@ -201,12 +289,12 @@ class _SettingsViewState extends State<SettingsView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Clear image cache',
+                          context.t(S.clearImageCache),
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Free space and reset cached thumbnails',
+                          context.t(S.clearImageCacheHint),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
