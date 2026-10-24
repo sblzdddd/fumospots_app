@@ -26,6 +26,7 @@ class _SettingsViewState extends State<SettingsView> {
       M3EDropdownController<AppLanguage>();
   bool _clearing = false;
   bool _syncingLanguage = false;
+  int? _cacheBytes;
 
   static const _themeModes = [
     ThemeMode.light,
@@ -39,6 +40,7 @@ class _SettingsViewState extends State<SettingsView> {
     _theme.addListener(_onChanged);
     _visual.addListener(_onChanged);
     _locale.addListener(_onLocaleChanged);
+    _loadCacheSize();
   }
 
   @override
@@ -96,19 +98,63 @@ class _SettingsViewState extends State<SettingsView> {
     _locale.setLanguage(items.first.value);
   }
 
+  Future<void> _loadCacheSize() async {
+    final bytes = await _images.sizeBytes();
+    if (!mounted || bytes == null) {
+      return;
+    }
+    setState(() => _cacheBytes = bytes);
+  }
+
   Future<void> _clearImageCache() async {
     if (_clearing) {
+      return;
+    }
+    final bytes = _cacheBytes ?? await _images.sizeBytes();
+    if (!mounted) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            bytes == null
+                ? context.t(S.clearImageCacheConfirmUnknown)
+                : context.t(
+                    S.clearImageCacheConfirm,
+                    params: {'size': formatCacheSize(bytes)},
+                  ),
+          ),
+        ),
+        actions: [
+          M3EButton(
+            onPressed: () => Navigator.pop(context, false),
+            style: M3EButtonStyle.text,
+            child: Text(context.t(S.cancel)),
+          ),
+          M3EButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.t(S.clear)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
       return;
     }
     setState(() => _clearing = true);
     try {
       await _images.clear();
+      final cleared = await _images.sizeBytes();
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t(S.imageCacheCleared))),
-      );
+      setState(() => _cacheBytes = cleared ?? 0);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.t(S.imageCacheCleared))));
     } finally {
       if (mounted) {
         setState(() => _clearing = false);
@@ -211,7 +257,10 @@ class _SettingsViewState extends State<SettingsView> {
               actions: [
                 M3EToggleButtonGroupAction(
                   label: Text(context.t(S.navPosts)),
-                  icon: const FaIcon(FontAwesomeIcons.tableCellsLarge, size: 14),
+                  icon: const FaIcon(
+                    FontAwesomeIcons.tableCellsLarge,
+                    size: 14,
+                  ),
                 ),
                 M3EToggleButtonGroupAction(
                   label: Text(context.t(S.navMap)),
@@ -233,10 +282,7 @@ class _SettingsViewState extends State<SettingsView> {
               Row(
                 children: [
                   const SizedBox(width: 12),
-                  FaIcon(
-                    FontAwesomeIcons.droplet,
-                    color: cs.onSurfaceVariant,
-                  ),
+                  FaIcon(FontAwesomeIcons.droplet, color: cs.onSurfaceVariant),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -248,12 +294,9 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          context.t(
-                            _visual.blurEnabled ? S.blurOn : S.blurOff,
-                          ),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
+                          context.t(_visual.blurEnabled ? S.blurOn : S.blurOff),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: cs.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -295,9 +338,8 @@ class _SettingsViewState extends State<SettingsView> {
                         const SizedBox(height: 2),
                         Text(
                           context.t(S.clearImageCacheHint),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: cs.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -312,7 +354,16 @@ class _SettingsViewState extends State<SettingsView> {
                           height: 28,
                         ),
                       ),
+                    )
+                  else if (_cacheBytes != null) ...[
+                    const SizedBox(width: 12),
+                    Text(
+                      formatCacheSize(_cacheBytes!),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: cs.onSurfaceVariant),
                     ),
+                  ],
+                  const SizedBox(width: 12),
                 ],
               ),
             ],
@@ -334,9 +385,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(context).textTheme.labelLarge
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }

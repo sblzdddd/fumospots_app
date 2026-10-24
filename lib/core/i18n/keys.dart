@@ -3,6 +3,7 @@ abstract final class S {
   // Common
   static const retry = 'common.retry';
   static const cancel = 'common.cancel';
+  static const clear = 'common.clear';
   static const close = 'common.close';
   static const search = 'common.search';
   static const processing = 'common.processing';
@@ -33,6 +34,9 @@ abstract final class S {
   static const blurOff = 'settings.blurOff';
   static const clearImageCache = 'settings.clearImageCache';
   static const clearImageCacheHint = 'settings.clearImageCacheHint';
+  static const clearImageCacheConfirm = 'settings.clearImageCacheConfirm';
+  static const clearImageCacheConfirmUnknown =
+      'settings.clearImageCacheConfirmUnknown';
   static const imageCacheCleared = 'settings.imageCacheCleared';
   static const languageEnglish = 'settings.languageEnglish';
   static const languageChinese = 'settings.languageChinese';

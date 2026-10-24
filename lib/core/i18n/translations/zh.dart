@@ -3,6 +3,7 @@ import '../keys.dart';
 const Map<String, String> zhStrings = {
   S.retry: '重试',
   S.cancel: '取消',
+  S.clear: '清除',
   S.close: '关闭',
   S.search: '搜索',
   S.processing: '处理中…',
@@ -31,6 +32,8 @@ const Map<String, String> zhStrings = {
   S.blurOff: '纯色导航栏',
   S.clearImageCache: '清除图片缓存',
   S.clearImageCacheHint: '释放空间并重置缩略图缓存',
+  S.clearImageCacheConfirm: '清除 {size} 的图片缓存？缩略图会在再次查看时重新下载。',
+  S.clearImageCacheConfirmUnknown: '清除图片缓存？缩略图会在再次查看时重新下载。',
   S.imageCacheCleared: '图片缓存已清除。',
   S.languageEnglish: 'English',
   S.languageChinese: '中文',

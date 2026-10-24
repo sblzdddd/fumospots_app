@@ -3,6 +3,7 @@ import '../keys.dart';
 const Map<String, String> enStrings = {
   S.retry: 'Retry',
   S.cancel: 'Cancel',
+  S.clear: 'Clear',
   S.close: 'Close',
   S.search: 'Search',
   S.processing: 'Processing...',
@@ -31,6 +32,10 @@ const Map<String, String> enStrings = {
   S.blurOff: 'Solid navigation bar',
   S.clearImageCache: 'Clear image cache',
   S.clearImageCacheHint: 'Free space and reset cached thumbnails',
+  S.clearImageCacheConfirm:
+      'Clear {size} of cached images? Thumbnails will download again.',
+  S.clearImageCacheConfirmUnknown:
+      'Clear cached images? Thumbnails will download again.',
   S.imageCacheCleared: 'Image cache cleared.',
   S.languageEnglish: 'English',
   S.languageChinese: '中文',

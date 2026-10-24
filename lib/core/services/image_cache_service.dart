@@ -76,6 +76,41 @@ class ImageCacheService {
     );
   }
 
+  /// Total bytes of files tracked by the disk cache.
+  ///
+  /// Returns null when the cache index cannot be read.
+  Future<int?> sizeBytes() async {
+    final manager = _cacheManager;
+    if (manager is! CacheManager) {
+      return 0;
+    }
+    try {
+      await manager.config.repo.open();
+      try {
+        final objects = await manager.config.repo.getAllObjects();
+        var total = 0;
+        for (final object in objects) {
+          final file = await manager.config.fileSystem.createFile(
+            object.relativePath,
+          );
+          if (await file.exists()) {
+            total += await file.length();
+            continue;
+          }
+          final stored = object.length;
+          if (stored != null && stored > 0) {
+            total += stored;
+          }
+        }
+        return total;
+      } finally {
+        await manager.config.repo.close();
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> clear() async {
     _aspectByPostId.clear();
     _aspectByUrl.clear();
@@ -84,4 +119,30 @@ class ImageCacheService {
     memory.clear();
     memory.clearLiveImages();
   }
+}
+
+/// Disk cache size as KB, MB, or GB. An empty cache shows as `0 KB`.
+String formatCacheSize(int bytes) {
+  if (bytes <= 0) {
+    return '0 KB';
+  }
+  var value = bytes / 1024;
+  var unit = 'KB';
+  if (value >= 1024) {
+    value /= 1024;
+    unit = 'MB';
+  }
+  if (value >= 1024) {
+    value /= 1024;
+    unit = 'GB';
+  }
+  if (unit == 'KB' && value < 0.1) {
+    return '0.1 KB';
+  }
+  final precise = value < 100;
+  var shown = value.toStringAsFixed(precise ? 1 : 0);
+  if (shown.endsWith('.0')) {
+    shown = shown.substring(0, shown.length - 2);
+  }
+  return '$shown $unit';
 }

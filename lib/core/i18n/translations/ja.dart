@@ -3,6 +3,7 @@ import '../keys.dart';
 const Map<String, String> jaStrings = {
   S.retry: '再試行',
   S.cancel: 'キャンセル',
+  S.clear: '削除',
   S.close: '閉じる',
   S.search: '検索',
   S.processing: '処理中…',
@@ -31,6 +32,8 @@ const Map<String, String> jaStrings = {
   S.blurOff: '単色のナビバー',
   S.clearImageCache: '画像キャッシュを削除',
   S.clearImageCacheHint: '容量を解放し、サムネイルキャッシュをリセット',
+  S.clearImageCacheConfirm: '{size} の画像キャッシュを削除しますか？サムネイルは再ダウンロードされます。',
+  S.clearImageCacheConfirmUnknown: '画像キャッシュを削除しますか？サムネイルは再ダウンロードされます。',
   S.imageCacheCleared: '画像キャッシュを削除しました。',
   S.languageEnglish: 'English',
   S.languageChinese: '中文',
@@ -90,8 +93,7 @@ const Map<String, String> jaStrings = {
   S.enterEmail: 'メールアドレスを入力してください。',
   S.passwordTooShort: 'パスワードは {count} 文字以上必要です。',
   S.passwordsDoNotMatch: 'パスワードが一致しません。',
-  S.authorIdInvalid:
-      '作者 ID は 3〜24 文字の英数字、アンダースコア、ハイフンです。',
+  S.authorIdInvalid: '作者 ID は 3〜24 文字の英数字、アンダースコア、ハイフンです。',
   S.emailCodeRequired: 'メール認証コードが必要です。',
   S.profileLoadFailed: 'プロフィールを読み込めませんでした。',
   S.githubLogin: 'GitHub でログイン',
