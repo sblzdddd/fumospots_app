@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../post/post_format.dart';
 import '../character_catalog_controller.dart';
 import '../character_format.dart';
@@ -11,13 +14,13 @@ class CharacterFilterBar extends StatefulWidget {
   const CharacterFilterBar({
     super.key,
     this.floating = false,
-    this.hintText = 'Filter by character',
+    this.hintText,
   });
 
   /// Elevated floating style for the map overlay.
   final bool floating;
 
-  final String hintText;
+  final String? hintText;
 
   @override
   State<CharacterFilterBar> createState() => _CharacterFilterBarState();
@@ -28,6 +31,7 @@ class _CharacterFilterBarState extends State<CharacterFilterBar> {
       GetIt.instance<CharacterCatalogController>();
   final CharacterFilterController _filter =
       GetIt.instance<CharacterFilterController>();
+  final LocaleController _locale = GetIt.instance<LocaleController>();
   final M3EDropdownController<int> _dropdown = M3EDropdownController<int>();
 
   bool _syncing = false;
@@ -36,13 +40,37 @@ class _CharacterFilterBarState extends State<CharacterFilterBar> {
   void initState() {
     super.initState();
     _filter.addListener(_syncFromFilter);
+    _locale.addListener(_onLocaleChanged);
   }
 
   @override
   void dispose() {
     _filter.removeListener(_syncFromFilter);
+    _locale.removeListener(_onLocaleChanged);
     _dropdown.dispose();
     super.dispose();
+  }
+
+  void _onLocaleChanged() {
+    if (mounted) setState(() {});
+    unawaited(_reloadLabels());
+  }
+
+  Future<void> _reloadLabels() async {
+    if (!_dropdown.initialized) {
+      return;
+    }
+    try {
+      final items = await _loadItems();
+      if (!mounted || !_dropdown.initialized) {
+        return;
+      }
+      _syncing = true;
+      _dropdown.setItems(items);
+      _syncing = false;
+    } catch (_) {
+      // Keep existing labels if reload fails.
+    }
   }
 
   Future<List<M3EDropdownItem<int>>> _loadItems() async {
@@ -108,7 +136,7 @@ class _CharacterFilterBarState extends State<CharacterFilterBar> {
       openMotion: M3EMotion.custom(stiffness: 500, damping: 0.6),
       closeMotion: M3EMotion.custom(stiffness: 500, damping: 0.6),
       fieldStyle: M3EDropdownFieldStyle(
-        hintText: widget.hintText,
+        hintText: widget.hintText ?? context.t(S.filterByCharacter),
         showClearIcon: true,
         padding: const EdgeInsets.all(14),
         pressedScale: 0.98,
@@ -122,13 +150,13 @@ class _CharacterFilterBarState extends State<CharacterFilterBar> {
         contentPadding: const EdgeInsets.all(8),
         backgroundColor: colors.surfaceContainer,
       ),
-      searchStyle: const M3ESearchStyle(
-        hintText: 'Search characters…',
+      searchStyle: M3ESearchStyle(
+        hintText: context.t(S.searchCharacters),
         filled: false,
         autofocus: false,
         showClearIcon: true,
         searchDebounceMs: 0,
-        contentPadding: EdgeInsets.all(8),
+        contentPadding: const EdgeInsets.all(8),
       ),
       chipStyle: M3EChipStyle(
         backgroundColor: colors.secondaryContainer,
@@ -168,9 +196,11 @@ class _CharacterFilterBarState extends State<CharacterFilterBar> {
       emptyBuilder: (context) => Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
-          _catalog.error != null
-              ? "Couldn't load characters."
-              : 'No matching characters.',
+          context.t(
+            _catalog.error != null
+                ? S.charactersLoadFailed
+                : S.noMatchingCharacters,
+          ),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: colors.onSurfaceVariant,
           ),
