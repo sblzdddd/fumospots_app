@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -34,19 +37,36 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-            
+
             // Enables R8 code shrinking, obfuscation, and optimization.
             // Kotlin DSL exposes the Java is*/set* methods as isMinifyEnabled.
             isMinifyEnabled = true
 
             // Removes unused resources (images, layouts) from dependencies.
             isShrinkResources = true
-            
+
             // Uses the aggressive optimize ProGuard ruleset
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+
+            // Ask AGP to strip native debug symbols from packaged .so files.
+            ndk {
+                debugSymbolLevel = "NONE"
+            }
+        }
+    }
+
+    // AGP output names (build/app/outputs/apk/...). Flutter later copies into
+    // flutter-apk/ and renames to app-<abi>-<mode>.apk; see afterEvaluate below.
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            val versionName = variant.versionName ?: defaultConfig.versionName ?: "0.0.0"
+            val arch = output.getFilter(com.android.build.OutputFile.ABI) ?: "universal"
+            output.outputFileName = "FumoSpots_${versionName}_${arch}.apk"
         }
     }
 }
@@ -59,4 +79,34 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+afterEvaluate {
+    val versionName = android.defaultConfig.versionName ?: "0.0.0"
+    val splitApk = Regex("""^app-(armeabi-v7a|arm64-v8a|x86_64)-(debug|profile|release)\.apk$""")
+    val universalApk = Regex("""^app-(debug|profile|release)\.apk$""")
+
+    tasks.matching { it.name.startsWith("assemble") }.configureEach {
+        doLast {
+            val apkDir = layout.buildDirectory.get().asFile.resolve("outputs/flutter-apk")
+            if (!apkDir.isDirectory) return@doLast
+
+            apkDir.listFiles()
+                ?.filter { it.isFile && it.extension == "apk" }
+                ?.toList()
+                .orEmpty()
+                .forEach { apk ->
+                    val arch =
+                        splitApk.matchEntire(apk.name)?.groupValues?.get(1)
+                            ?: universalApk.matchEntire(apk.name)?.let { "universal" }
+                            ?: return@forEach
+                    val renamed = apkDir.resolve("FumoSpots_${versionName}_${arch}.apk")
+                    Files.copy(
+                        apk.toPath(),
+                        renamed.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING,
+                    )
+                }
+        }
+    }
 }

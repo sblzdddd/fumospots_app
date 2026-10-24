@@ -39,6 +39,7 @@ dependencies:
   geolocator: ^14.1.2
   flutter_image_compress: ^2.5.1
   mime: ^2.1.0
+  package_info_plus: ^10.2.2
   share_plus: ^13.3.1
 
 dev_dependencies:
@@ -57,3 +58,4 @@ flutter:
     - .env
     - assets/brand/logo.svg
     - assets/brand/logo-dark.svg
+    - assets/Chen_W.png
