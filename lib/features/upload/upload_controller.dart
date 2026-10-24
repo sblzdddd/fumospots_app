@@ -12,9 +12,12 @@ import 'location/upload_device_location.dart';
 import 'location/upload_place.dart';
 import 'photo/upload_exif.dart';
 import 'photo/upload_photo_intake.dart';
+import 'photo/upload_webp.dart';
 import 'upload_model.dart';
 import 'upload_repository.dart';
 import 'upload_submit.dart';
+
+const _photoCompressionError = 'Could not compress a photo.';
 
 class UploadController extends ChangeNotifier {
   UploadController({
@@ -50,8 +53,6 @@ class UploadController extends ChangeNotifier {
   bool reverseLookup = false;
   bool uploading = false;
   bool loadingEdit = false;
-  bool benchmarking = false;
-  String? benchmarkResult;
   String progressLabel = 'Submitting';
   String? error;
   int? editPostId;
@@ -60,14 +61,14 @@ class UploadController extends ChangeNotifier {
   int _progressTotal = 0;
   bool _disposed = false;
   UploadLatLng? exactLocation;
+  final Map<String, EncodedUploadPhoto> _encoded = {};
+  final Map<String, Future<void>> _compressionTasks = {};
+  String? _compressionError;
 
   bool get isEditMode => editPostId != null;
 
   bool get canAddPhoto =>
-      photos.length < maxPostPhotos &&
-      !uploading &&
-      !loadingEdit &&
-      !benchmarking;
+      photos.length < maxPostPhotos && !uploading && !loadingEdit;
 
   double? get uploadProgress {
     if (!uploading || _progressTotal == 0) return null;
@@ -77,7 +78,6 @@ class UploadController extends ChangeNotifier {
   bool get canSubmit =>
       !uploading &&
       !loadingEdit &&
-      !benchmarking &&
       photos.isNotEmpty &&
       title.trim().isNotEmpty &&
       characterIds.isNotEmpty &&
@@ -161,28 +161,8 @@ class UploadController extends ChangeNotifier {
     }
   }
 
-  Future<void> benchmarkConversions() async {
-    if (photos.isEmpty || uploading || benchmarking) return;
-    benchmarking = true;
-    benchmarkResult = null;
-    error = null;
-    _notify();
-    try {
-      final result = await benchmarkPhotoConversions(photos);
-      if (result.error != null) {
-        error = result.error;
-        benchmarkResult = 'Conversion failed';
-      } else {
-        benchmarkResult = result.summary;
-      }
-    } finally {
-      benchmarking = false;
-      _notify();
-    }
-  }
-
   Future<void> addPicked(List<XFile> files) async {
-    if (files.isEmpty || uploading || benchmarking) return;
+    if (files.isEmpty || uploading) return;
     error = null;
     final result = await intakePickedPhotos(
       files: files,
@@ -195,12 +175,86 @@ class UploadController extends ChangeNotifier {
       return;
     }
     final wasEmpty = photos.isEmpty;
-    photos = [...photos, ...result.accepted];
+    final accepted = [
+      for (final photo in result.accepted)
+        photo.copyWith(compressionProgress: 0),
+    ];
+    photos = [...photos, ...accepted];
+    for (final photo in accepted) {
+      _startCompression(photo);
+    }
     _notify();
     if (wasEmpty && (exactLocation == null || capturedAt == null)) {
       await fillFromPhoto(overwrite: false);
     }
   }
+
+  void _startCompression(UploadPhoto photo) {
+    if (photo.isExisting || photo.path.isEmpty) return;
+    _compressionTasks[photo.id] = _runCompression(photo);
+  }
+
+  Future<void> _runCompression(UploadPhoto photo) async {
+    try {
+      final encoded = await encodeUploadPhoto(
+        sourcePath: photo.path,
+        mimeType: photo.mimeType,
+        onProgress: (progress) {
+          if (progress >= 1) return;
+          _patchPhoto(
+            photo.id,
+            (current) => current.copyWith(
+              compressionProgress: progress,
+              compressionFailed: false,
+            ),
+          );
+        },
+      );
+      if (_disposed || !_hasPhoto(photo.id)) return;
+      _encoded[photo.id] = encoded;
+      _patchPhoto(
+        photo.id,
+        (current) =>
+            current.copyWith(compressionProgress: 1, compressionFailed: false),
+      );
+    } on FumoClientError catch (error) {
+      _failPhoto(photo.id, error.message);
+    } catch (_) {
+      _failPhoto(photo.id, _photoCompressionError);
+    } finally {
+      _compressionTasks.remove(photo.id);
+    }
+  }
+
+  Future<void> _waitForCompression() {
+    final pending = List<Future<void>>.of(_compressionTasks.values);
+    if (pending.isEmpty) return Future<void>.value();
+    return Future.wait(pending);
+  }
+
+  void _failPhoto(String id, String message) {
+    if (_disposed || !_hasPhoto(id)) return;
+    _encoded.remove(id);
+    _compressionError = message;
+    error = message;
+    _patchPhoto(
+      id,
+      (photo) =>
+          photo.copyWith(compressionProgress: 1, compressionFailed: true),
+    );
+  }
+
+  void _patchPhoto(String id, UploadPhoto Function(UploadPhoto photo) patch) {
+    if (_disposed) return;
+    final index = photos.indexWhere((photo) => photo.id == id);
+    if (index < 0) return;
+    final next = [...photos];
+    next[index] = patch(next[index]);
+    photos = next;
+    _notify();
+  }
+
+  bool _hasPhoto(String id) => photos.any((photo) => photo.id == id);
 
   void removePhoto(String id) {
     if (uploading) return;
@@ -208,23 +262,35 @@ class UploadController extends ChangeNotifier {
     if (index < 0) return;
     final next = [...photos]..removeAt(index);
     photos = next;
+    _encoded.remove(id);
+    _compressionTasks.remove(id);
+    if (!next.any((photo) => photo.compressionFailed) &&
+        error == _compressionError) {
+      error = null;
+      _compressionError = null;
+    }
     _notify();
     if (index == 0 && next.isNotEmpty && exactLocation == null) {
       unawaited(fillFromPhoto(overwrite: false));
     }
   }
 
-  void movePhoto(String id, int direction) {
+  /// Moves [draggedId] into the cell currently occupied by [toIndex].
+  void reorderPhotos(String draggedId, int toIndex) {
     if (uploading) return;
-    final index = photos.indexWhere((photo) => photo.id == id);
-    final nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= photos.length) return;
+    final from = photos.indexWhere((photo) => photo.id == draggedId);
+    if (from < 0 ||
+        toIndex < 0 ||
+        toIndex >= photos.length ||
+        from == toIndex) {
+      return;
+    }
     final next = [...photos];
-    final photo = next.removeAt(index);
-    next.insert(nextIndex, photo);
+    final photo = next.removeAt(from);
+    next.insert(toIndex, photo);
     photos = next;
     _notify();
-    if ((index == 0 || nextIndex == 0) && exactLocation == null) {
+    if ((from == 0 || toIndex == 0) && exactLocation == null) {
       unawaited(fillFromPhoto(overwrite: false));
     }
   }
@@ -283,8 +349,7 @@ class UploadController extends ChangeNotifier {
             storageImagePath: detail.photos[index].imagePath,
             storageThumbPath: detail.photos[index].thumbPath,
             previewUrl:
-                detail.photos[index].thumbUrl ??
-                detail.photos[index].imageUrl,
+                detail.photos[index].thumbUrl ?? detail.photos[index].imageUrl,
           ),
       ];
       _photoSeq = photos.length;
@@ -411,7 +476,7 @@ class UploadController extends ChangeNotifier {
   }
 
   Future<bool> submit() async {
-    if (uploading || benchmarking) return false;
+    if (uploading) return false;
     error = null;
     if (!await applyCoordinates()) return false;
     final trimmedTitle = title.trim();
@@ -454,12 +519,19 @@ class UploadController extends ChangeNotifier {
       return false;
     }
 
+    final stillCompressing = photos.any((photo) => photo.isCompressing);
     uploading = true;
-    progressLabel = 'Converting';
+    progressLabel = stillCompressing ? 'Converting' : 'Uploading';
     _progressDone = 0;
-    _progressTotal = photos.length * 2;
+    _progressTotal = 0;
     _notify();
     try {
+      await _waitForCompression();
+      if (_disposed) return false;
+      if (photos.any((photo) => photo.compressionFailed)) {
+        error = _compressionError ?? _photoCompressionError;
+        return false;
+      }
       await submitUpload(
         repository: _repository,
         input: UploadSubmitInput(
@@ -476,6 +548,7 @@ class UploadController extends ChangeNotifier {
           characterIds: characterIds,
           editPostId: editPostId,
         ),
+        encodedById: Map<String, EncodedUploadPhoto>.of(_encoded),
         onProgress: (progress) {
           progressLabel = progress.label;
           _progressDone = progress.done;
@@ -551,6 +624,8 @@ class UploadController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _encoded.clear();
+    _compressionTasks.clear();
     super.dispose();
   }
 }

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -28,12 +30,12 @@ class UploadPhotoSection extends StatelessWidget {
           required: true,
         ),
         const SizedBox(height: 8),
-        _PhotoStrip(
+        _PhotoGrid(
           photos: controller.photos,
-          enabled: !uploading && !controller.benchmarking,
+          enabled: !uploading,
           onAdd: controller.canAddPhoto ? controller.pickFromGallery : null,
           onRemove: controller.removePhoto,
-          onMove: controller.movePhoto,
+          onReorder: controller.reorderPhotos,
         ),
         const SizedBox(height: 8),
         UploadActionPair(
@@ -48,25 +50,6 @@ class UploadPhotoSection extends StatelessWidget {
             onPressed: canAdd ? controller.pickFromCamera : null,
           ),
         ),
-        const SizedBox(height: 8),
-        M3EButton(
-          onPressed:
-              controller.photos.isEmpty || uploading || controller.benchmarking
-              ? null
-              : controller.benchmarkConversions,
-          style: M3EButtonStyle.tonal,
-          shape: M3EButtonShape.round,
-          size: M3EButtonSize.sm,
-          child: Text(controller.benchmarking ? 'Timing…' : 'Time conversion'),
-        ),
-        if (controller.benchmarkResult != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            controller.benchmarkResult!,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
         if (controller.detectingExif) ...[
           const SizedBox(height: 8),
           Text(
@@ -80,40 +63,129 @@ class UploadPhotoSection extends StatelessWidget {
   }
 }
 
-class _PhotoStrip extends StatelessWidget {
-  const _PhotoStrip({
+class _PhotoGrid extends StatelessWidget {
+  const _PhotoGrid({
     required this.photos,
     required this.enabled,
     required this.onAdd,
     required this.onRemove,
-    required this.onMove,
+    required this.onReorder,
   });
 
   final List<UploadPhoto> photos;
   final bool enabled;
   final VoidCallback? onAdd;
   final ValueChanged<String> onRemove;
-  final void Function(String id, int direction) onMove;
+  final void Function(String id, int toIndex) onReorder;
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 8.0;
+        final columns = constraints.maxWidth >= 560 ? 4 : 3;
+        final extent = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (var index = 0; index < photos.length; index++)
+              _PhotoTile(
+                key: ValueKey(photos[index].id),
+                photo: photos[index],
+                index: index,
+                count: photos.length,
+                extent: extent,
+                enabled: enabled,
+                onRemove: onRemove,
+                onReorder: onReorder,
+              ),
+            if (onAdd != null) _AddPhotoTile(extent: extent, onPressed: onAdd),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PhotoTile extends StatelessWidget {
+  const _PhotoTile({
+    super.key,
+    required this.photo,
+    required this.index,
+    required this.count,
+    required this.extent,
+    required this.enabled,
+    required this.onRemove,
+    required this.onReorder,
+  });
+
+  final UploadPhoto photo;
+  final int index;
+  final int count;
+  final double extent;
+  final bool enabled;
+  final ValueChanged<String> onRemove;
+  final void Function(String id, int toIndex) onReorder;
+
+  bool get _canDrag => enabled && count > 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final face = _PhotoFace(
+      photo: photo,
+      index: index,
+      enabled: enabled,
+      showDragHandle: _canDrag,
+      onRemove: onRemove,
+    );
+    final tile = SizedBox(width: extent, height: extent, child: face);
+    if (!_canDrag) return tile;
+
+    final colors = Theme.of(context).colorScheme;
     return SizedBox(
-      height: 132,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: photos.length + (onAdd == null ? 0 : 1),
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          if (index == photos.length) {
-            return _AddPhotoTile(onPressed: onAdd);
-          }
-          return _PhotoTile(
-            photo: photos[index],
-            index: index,
-            count: photos.length,
-            enabled: enabled,
-            onRemove: onRemove,
-            onMove: onMove,
+      width: extent,
+      height: extent,
+      child: DragTarget<String>(
+        onWillAcceptWithDetails: (details) => details.data != photo.id,
+        onAcceptWithDetails: (details) => onReorder(details.data, index),
+        builder: (context, candidate, _) {
+          return LongPressDraggable<String>(
+            data: photo.id,
+            delay: const Duration(milliseconds: 100),
+            dragAnchorStrategy: childDragAnchorStrategy,
+            feedback: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                width: extent,
+                height: extent,
+                child: _PhotoFace(
+                  photo: photo,
+                  index: index,
+                  enabled: false,
+                  showDragHandle: true,
+                  showRemove: false,
+                  onRemove: onRemove,
+                ),
+              ),
+            ),
+            childWhenDragging: DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SizedBox(width: extent, height: extent),
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                face,
+                if (candidate.isNotEmpty)
+                  const IgnorePointer(child: _DropOutline()),
+              ],
+            ),
           );
         },
       ),
@@ -121,93 +193,138 @@ class _PhotoStrip extends StatelessWidget {
   }
 }
 
-class _PhotoTile extends StatelessWidget {
-  const _PhotoTile({
-    required this.photo,
-    required this.index,
-    required this.count,
-    required this.enabled,
-    required this.onRemove,
-    required this.onMove,
-  });
-
-  final UploadPhoto photo;
-  final int index;
-  final int count;
-  final bool enabled;
-  final ValueChanged<String> onRemove;
-  final void Function(String id, int direction) onMove;
+class _DropOutline extends StatelessWidget {
+  const _DropOutline();
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: 112,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ColoredBox(
-                    color: colors.surfaceContainerHigh,
-                    child: _photoPreview(photo, colors),
-                  ),
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: _IndexBadge(index: index + 1),
-                  ),
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: _PhotoIconButton(
-                      tooltip: 'Remove photo',
-                      icon: FontAwesomeIcons.xmark,
-                      onPressed: enabled ? () => onRemove(photo.id) : null,
-                    ),
-                  ),
-                  Positioned(
-                    left: 4,
-                    right: 4,
-                    bottom: 4,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _PhotoIconButton(
-                          tooltip: 'Move earlier',
-                          icon: FontAwesomeIcons.arrowLeft,
-                          onPressed: enabled && index > 0
-                              ? () => onMove(photo.id, -1)
-                              : null,
-                        ),
-                        _PhotoIconButton(
-                          tooltip: 'Move later',
-                          icon: FontAwesomeIcons.arrowRight,
-                          onPressed: enabled && index < count - 1
-                              ? () => onMove(photo.id, 1)
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.primary, width: 2),
+      ),
+    );
+  }
+}
+
+class _PhotoFace extends StatelessWidget {
+  const _PhotoFace({
+    required this.photo,
+    required this.index,
+    required this.enabled,
+    required this.showDragHandle,
+    required this.onRemove,
+    this.showRemove = true,
+  });
+
+  final UploadPhoto photo;
+  final int index;
+  final bool enabled;
+  final bool showDragHandle;
+  final bool showRemove;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final compressing = photo.isCompressing;
+    final failed = photo.compressionFailed;
+    final handleBottom = failed ? 28.0 : (compressing ? 10.0 : 6.0);
+    return Semantics(
+      label: showDragHandle
+          ? 'Photo ${index + 1}. Long press and drag to reorder.'
+          : 'Photo ${index + 1}',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(
+              color: colors.surfaceContainerHigh,
+              child: _photoPreview(photo, colors),
             ),
+            Positioned(left: 6, top: 6, child: _IndexBadge(index: index + 1)),
+            if (showRemove)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: IconButton(
+                  tooltip: 'Remove photo',
+                  onPressed: enabled ? () => _confirmRemove(context) : null,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.55),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.black.withValues(
+                      alpha: 0.35,
+                    ),
+                    disabledForegroundColor: Colors.white.withValues(
+                      alpha: 0.7,
+                    ),
+                    overlayColor: Colors.white.withValues(alpha: 0.16),
+                    fixedSize: const Size(22, 22),
+                    minimumSize: const Size(22, 22),
+                    maximumSize: const Size(22, 22),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.standard,
+                    iconSize: 12,
+                    shape: const CircleBorder(),
+                  ),
+                  icon: const FaIcon(FontAwesomeIcons.xmark),
+                ),
+              ),
+            if (showDragHandle)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: handleBottom,
+                child: const Center(child: _DragIndicator()),
+              ),
+            if (failed)
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _CompressionFailedBar(),
+              )
+            else if (compressing)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _CompressionBar(
+                  progress: photo.compressionProgress ?? 0,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRemove(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Text('Remove this photo?'),
+        ),
+        actions: [
+          M3EButton(
+            onPressed: () => Navigator.pop(context, false),
+            style: M3EButtonStyle.text,
+            child: const Text('Cancel'),
           ),
-          const SizedBox(height: 4),
-          Text(
-            photo.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall,
+          M3EButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
           ),
         ],
       ),
     );
+    if (confirmed == true && context.mounted) onRemove(photo.id);
   }
 
   Widget _photoPreview(UploadPhoto photo, ColorScheme colors) {
@@ -218,10 +335,8 @@ class _PhotoTile extends StatelessWidget {
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
-        errorWidget: (_, _, _) => Icon(
-          Icons.image_outlined,
-          color: colors.onSurfaceVariant,
-        ),
+        errorWidget: (_, _, _) =>
+            Icon(Icons.image_outlined, color: colors.onSurfaceVariant),
       );
     }
     if (photo.path.isEmpty) {
@@ -230,34 +345,138 @@ class _PhotoTile extends StatelessWidget {
     return Image.file(
       File(photo.path),
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Icon(
-        Icons.image_outlined,
-        color: colors.onSurfaceVariant,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) =>
+          Icon(Icons.image_outlined, color: colors.onSurfaceVariant),
+    );
+  }
+}
+
+class _CompressionBar extends StatefulWidget {
+  const _CompressionBar({required this.progress});
+
+  final double progress;
+
+  @override
+  State<_CompressionBar> createState() => _CompressionBarState();
+}
+
+class _CompressionBarState extends State<_CompressionBar> {
+  static const _tick = Duration(milliseconds: 160);
+  Timer? _timer;
+  double _shown = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _shown = widget.progress;
+    _timer = Timer.periodic(_tick, (_) => _advance());
+  }
+
+  @override
+  void didUpdateWidget(covariant _CompressionBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.progress > _shown) _shown = widget.progress;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  double _ceiling(double progress) => progress < 0.75 ? 0.7 : 0.94;
+
+  void _advance() {
+    if (!mounted || widget.progress <= 0) return;
+    final ceiling = _ceiling(widget.progress);
+    if (_shown >= ceiling) return;
+    setState(() {
+      final step = widget.progress < 0.75 ? 0.012 : 0.02;
+      _shown = math.min(ceiling, _shown + step);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return LinearProgressIndicator(
+      value: widget.progress <= 0 ? null : _shown.clamp(0.0, 1.0).toDouble(),
+      minHeight: 6,
+      backgroundColor: colors.scrim.withValues(alpha: 0.45),
+      color: colors.primary,
+      borderRadius: BorderRadius.zero,
+    );
+  }
+}
+
+class _CompressionFailedBar extends StatelessWidget {
+  const _CompressionFailedBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: colors.errorContainer.withValues(alpha: 0.94),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Text(
+          'Failed',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.labelSmall
+              ?.copyWith(color: colors.onErrorContainer),
+        ),
+      ),
+    );
+  }
+}
+
+class _DragIndicator extends StatelessWidget {
+  const _DragIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: FaIcon(
+            FontAwesomeIcons.gripVertical,
+            size: 12,
+            color: colors.onSurface,
+          ),
+        ),
       ),
     );
   }
 }
 
 class _AddPhotoTile extends StatelessWidget {
-  const _AddPhotoTile({required this.onPressed});
+  const _AddPhotoTile({required this.extent, required this.onPressed});
 
+  final double extent;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return SizedBox(
-      width: 112,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 18),
-        child: Material(
-          color: colors.surfaceContainerHigh,
+      width: extent,
+      height: extent,
+      child: Material(
+        color: colors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onPressed,
           borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: Icon(Icons.add, color: colors.onSurfaceVariant),
-          ),
+          child: Icon(Icons.add, color: colors.onSurfaceVariant),
         ),
       ),
     );
@@ -281,31 +500,6 @@ class _IndexBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text('$index', style: Theme.of(context).textTheme.labelSmall),
       ),
-    );
-  }
-}
-
-class _PhotoIconButton extends StatelessWidget {
-  const _PhotoIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final FaIconData icon;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return M3EButton(
-      onPressed: onPressed,
-      style: M3EButtonStyle.filled,
-      shape: M3EButtonShape.round,
-      size: M3EButtonSize.xs,
-      tooltip: tooltip,
-      semanticLabel: tooltip,
-      child: FaIcon(icon, size: 12),
     );
   }
 }

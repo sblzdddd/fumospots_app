@@ -1,6 +1,3 @@
-import 'package:flutter/foundation.dart';
-
-import '../../core/services/fumo_client_error.dart';
 import 'photo/upload_webp.dart';
 import 'upload_model.dart';
 import 'upload_repository.dart';
@@ -55,8 +52,12 @@ Future<void> submitUpload({
   required UploadRepository repository,
   required UploadSubmitInput input,
   required UploadProgressCallback onProgress,
+  Map<String, EncodedUploadPhoto> encodedById = const {},
 }) async {
-  final newPhotos = [for (final photo in input.photos) if (!photo.isExisting) photo];
+  final newPhotos = [
+    for (final photo in input.photos)
+      if (!photo.isExisting) photo,
+  ];
   final existingCount = input.photos.length - newPhotos.length;
   var done = 0;
   // Existing photos skip convert (2 steps) and contribute 0 blobs.
@@ -80,6 +81,23 @@ Future<void> submitUpload({
           ),
         );
         done += 1;
+        onProgress(
+          UploadSubmitProgress(label: 'Converting', done: done, total: total),
+        );
+        continue;
+      }
+
+      final encoded = encodedById[photo.id];
+      if (encoded != null) {
+        prepared.add(
+          preparedPhotoFromEncoded(
+            encoded: encoded,
+            userId: input.userId,
+            postFolder: postFolder,
+            index: index,
+          ),
+        );
+        done += 2;
         onProgress(
           UploadSubmitProgress(label: 'Converting', done: done, total: total),
         );
@@ -160,52 +178,6 @@ Future<void> submitUpload({
   } catch (_) {
     await _cleanup(repository, attempted);
     rethrow;
-  }
-}
-
-class BenchmarkResult {
-  const BenchmarkResult({this.summary, this.error});
-
-  final String? summary;
-  final String? error;
-}
-
-Future<BenchmarkResult> benchmarkPhotoConversions(
-  List<UploadPhoto> photos,
-) async {
-  final pending = [
-    for (final photo in photos)
-      if (!photo.isExisting) photo,
-  ];
-  if (pending.isEmpty) {
-    return const BenchmarkResult(error: 'Add a new photo to time conversion.');
-  }
-  final watch = Stopwatch()..start();
-  try {
-    for (var i = 0; i < pending.length; i++) {
-      final photo = pending[i];
-      final step = Stopwatch()..start();
-      await prepareUploadPhoto(
-        sourcePath: photo.path,
-        mimeType: photo.mimeType,
-        userId: 'benchmark',
-        postFolder: '00000000-0000-4000-8000-000000000000',
-        index: i,
-      );
-      step.stop();
-      debugPrint(
-        'webp photo ${i + 1}/${pending.length}: ${step.elapsedMilliseconds} ms',
-      );
-    }
-    watch.stop();
-    final seconds = (watch.elapsedMilliseconds / 1000).toStringAsFixed(2);
-    final summary = '${pending.length} photos in $seconds s';
-    debugPrint('webp total: $summary');
-    return BenchmarkResult(summary: summary);
-  } on FumoClientError catch (error) {
-    return BenchmarkResult(error: error.message);
-  } catch (_) {
-    return const BenchmarkResult(error: 'Conversion failed');
   }
 }
 

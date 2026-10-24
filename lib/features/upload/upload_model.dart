@@ -66,6 +66,8 @@ class UploadPhoto {
     this.storageImagePath,
     this.storageThumbPath,
     this.previewUrl,
+    this.compressionProgress,
+    this.compressionFailed = false,
   });
 
   final String id;
@@ -80,8 +82,32 @@ class UploadPhoto {
   final String? storageThumbPath;
   final String? previewUrl;
 
+  /// 0–1 while a newly picked photo is compressing. Null for photos already
+  /// stored on the server. 1 when compression has finished.
+  final double? compressionProgress;
+  final bool compressionFailed;
+
   bool get isExisting =>
       storageImagePath != null && storageImagePath!.isNotEmpty;
+
+  bool get isCompressing =>
+      !compressionFailed &&
+      compressionProgress != null &&
+      compressionProgress! < 1;
+
+  UploadPhoto copyWith({double? compressionProgress, bool? compressionFailed}) {
+    return UploadPhoto(
+      id: id,
+      name: name,
+      path: path,
+      mimeType: mimeType,
+      storageImagePath: storageImagePath,
+      storageThumbPath: storageThumbPath,
+      previewUrl: previewUrl,
+      compressionProgress: compressionProgress ?? this.compressionProgress,
+      compressionFailed: compressionFailed ?? this.compressionFailed,
+    );
+  }
 }
 
 class EditablePostPhoto {
@@ -150,9 +176,10 @@ class EditablePostDetail {
       photos: [
         if (photosRaw is List)
           for (final item in photosRaw)
-            if (item is Map) EditablePostPhoto.fromJson(
-              item.map((key, value) => MapEntry('$key', value)),
-            ),
+            if (item is Map)
+              EditablePostPhoto.fromJson(
+                item.map((key, value) => MapEntry('$key', value)),
+              ),
       ],
       capturedAt: _dateTime(json['capturedAt']),
       exactLocation: UploadLatLng(

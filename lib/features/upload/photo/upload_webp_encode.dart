@@ -9,21 +9,11 @@ import 'upload_image_codec.dart';
 import 'upload_webp_convert.dart';
 import 'upload_webp_util.dart';
 
-Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
-  Uint8List bytes,
-  String type,
-) async {
-  final watch = Stopwatch()..start();
+Future<({Uint8List bytes, String type, String ext, String status})>
+encodeUploadOriginal(Uint8List bytes, String type) async {
   final ext = extensionFromMime(type) ?? 'bin';
   if (type == 'image/webp' || type == 'image/gif' || type == 'image/avif') {
-    logWebpConversion(
-      'original',
-      bytes.length,
-      bytes.length,
-      'skipped',
-      watch.elapsed,
-    );
-    return (bytes: bytes, type: type, ext: ext);
+    return (bytes: bytes, type: type, ext: ext, status: 'skipped');
   }
   if (type == 'image/jpeg' || type == 'image/png') {
     final webp = await convertToWebp(
@@ -34,23 +24,19 @@ Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
     );
     if (webp != null && webp.length < bytes.length && webp.isNotEmpty) {
       assertPhotoSize(webp);
-      logWebpConversion(
-        'original',
-        bytes.length,
-        webp.length,
-        'converted',
-        watch.elapsed,
+      return (
+        bytes: webp,
+        type: 'image/webp',
+        ext: 'webp',
+        status: 'converted',
       );
-      return (bytes: webp, type: 'image/webp', ext: 'webp');
     }
-    logWebpConversion(
-      'original',
-      bytes.length,
-      webp?.length,
-      webp == null ? 'failed' : 'kept',
-      watch.elapsed,
+    return (
+      bytes: bytes,
+      type: type,
+      ext: ext,
+      status: webp == null ? 'failed' : 'kept',
     );
-    return (bytes: bytes, type: type, ext: ext);
   }
   final direct = await convertToWebp(
     bytes,
@@ -60,48 +46,30 @@ Future<({Uint8List bytes, String type, String ext})> encodeUploadOriginal(
   );
   if (direct != null && direct.isNotEmpty) {
     assertPhotoSize(direct);
-    logWebpConversion(
-      'original',
-      bytes.length,
-      direct.length,
-      'converted',
-      watch.elapsed,
+    return (
+      bytes: direct,
+      type: 'image/webp',
+      ext: 'webp',
+      status: 'converted',
     );
-    return (bytes: direct, type: 'image/webp', ext: 'webp');
   }
   final png = await pngAtLongest(bytes, longest: originalLongest);
   if (png == null) {
-    logWebpConversion('original', bytes.length, null, 'failed', watch.elapsed);
     throw const FumoClientError('This photo format is not supported.');
   }
   final webp = await convertToWebp(png, '.png', webpQualityFor(png.length));
   if (webp != null && webp.isNotEmpty) {
     assertPhotoSize(webp);
-    logWebpConversion(
-      'original',
-      bytes.length,
-      webp.length,
-      'converted',
-      watch.elapsed,
-    );
-    return (bytes: webp, type: 'image/webp', ext: 'webp');
+    return (bytes: webp, type: 'image/webp', ext: 'webp', status: 'converted');
   }
-  logWebpConversion(
-    'original',
-    png.length,
-    webp?.length,
-    'kept',
-    watch.elapsed,
-  );
   assertPhotoSize(png);
-  return (bytes: png, type: 'image/png', ext: 'png');
+  return (bytes: png, type: 'image/png', ext: 'png', status: 'kept');
 }
 
-Future<Uint8List?> encodeUploadThumb(
+Future<({Uint8List? bytes, String status})> encodeUploadThumb(
   Uint8List bytes, {
   required int sourceBytes,
 }) async {
-  final watch = Stopwatch()..start();
   try {
     final quality = math.max(62, webpQualityFor(sourceBytes) - 6);
     final Uint8List? webp;
@@ -117,25 +85,10 @@ Future<Uint8List?> encodeUploadThumb(
       webp = png == null ? null : await encodeWebpWithCli(png, '.png', quality);
     }
     if (webp == null || webp.isEmpty || webp.length > maxPhotoBytes) {
-      logWebpConversion(
-        'thumb',
-        sourceBytes,
-        webp?.length,
-        'skipped',
-        watch.elapsed,
-      );
-      return null;
+      return (bytes: null, status: 'skipped');
     }
-    logWebpConversion(
-      'thumb',
-      sourceBytes,
-      webp.length,
-      'converted',
-      watch.elapsed,
-    );
-    return webp;
+    return (bytes: webp, status: 'converted');
   } catch (_) {
-    logWebpConversion('thumb', sourceBytes, null, 'failed', watch.elapsed);
-    return null;
+    return (bytes: null, status: 'failed');
   }
 }

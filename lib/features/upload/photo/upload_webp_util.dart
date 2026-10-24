@@ -14,24 +14,34 @@ void assertPhotoSize(Uint8List bytes) {
 }
 
 int webpQualityFor(int bytes) {
-  if (bytes >= 12 * 1024 * 1024) return 68;
-  if (bytes >= 8 * 1024 * 1024) return 72;
-  if (bytes >= 4 * 1024 * 1024) return 76;
-  if (bytes >= 2 * 1024 * 1024) return 80;
-  return 84;
+  if (bytes >= 12 * 1024 * 1024) return 75;
+  if (bytes >= 8 * 1024 * 1024) return 80;
+  if (bytes >= 4 * 1024 * 1024) return 85;
+  if (bytes >= 2 * 1024 * 1024) return 90;
+  return 95;
 }
 
-void logWebpConversion(
-  String kind,
-  int before,
-  int? after,
-  String status,
-  Duration elapsed,
-) {
-  final output = after == null ? 'n/a' : formatByteSize(after);
+void logWebpImage({
+  required String sourcePath,
+  required int before,
+  required int originalBytes,
+  required String originalStatus,
+  required int? thumbBytes,
+  required String thumbStatus,
+}) {
+  final name = sourcePath.split(RegExp(r'[\\/]')).last;
+  final thumb = thumbBytes == null
+      ? thumbStatus
+      : '${formatByteSize(thumbBytes)} ($thumbStatus)';
   debugPrint(
-    'webp $kind: ${formatByteSize(before)} -> $output ($status, ${elapsed.inMilliseconds} ms)',
+    'webp $name: ${formatByteSize(before)} -> '
+    'original ${formatByteSize(originalBytes)} ($originalStatus), thumb $thumb',
   );
+}
+
+void logWebpImageFailed(String sourcePath, String message) {
+  final name = sourcePath.split(RegExp(r'[\\/]')).last;
+  debugPrint('webp $name: failed ($message)');
 }
 
 String formatByteSize(int bytes) {
