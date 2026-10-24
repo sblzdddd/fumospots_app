@@ -34,6 +34,19 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            
+            // Enables R8 code shrinking, obfuscation, and optimization.
+            // Kotlin DSL exposes the Java is*/set* methods as isMinifyEnabled.
+            isMinifyEnabled = true
+
+            // Removes unused resources (images, layouts) from dependencies.
+            isShrinkResources = true
+            
+            // Uses the aggressive optimize ProGuard ruleset
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
