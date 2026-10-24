@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login/auth_login_methods.dart';
@@ -88,10 +89,10 @@ class _UserViewState extends State<UserView> {
                   ),
                   title: Text(
                     !signedIn
-                        ? 'Not signed in'
+                        ? context.t(S.notSignedIn)
                         : hasUsername
                         ? '@$username'
-                        : 'Signed in',
+                        : context.t(S.signedIn),
                   ),
                   subtitle: signedIn && email != null && email.isNotEmpty
                       ? Text(email)
@@ -125,13 +126,15 @@ class _UserViewState extends State<UserView> {
                             : FontAwesomeIcons.rightToBracket,
                         size: 20,
                       ),
-                      label: Text(signedIn ? 'Sign out' : 'Sign in'),
+                      label: Text(
+                        context.t(signedIn ? S.signOut : S.signIn),
+                      ),
                     ),
                     M3EToggleButtonGroupAction(
                       width: second,
                       icon: const FaIcon(FontAwesomeIcons.gear, size: 20),
-                      tooltip: 'Settings',
-                      semanticLabel: 'Settings',
+                      tooltip: context.t(S.settings),
+                      semanticLabel: context.t(S.settings),
                     ),
                   ],
                 ),
@@ -144,7 +147,7 @@ class _UserViewState extends State<UserView> {
                     shape: M3EButtonShape.round,
                     decoration: authWideButtonDecoration,
                     icon: const FaIcon(FontAwesomeIcons.userPen, size: 16),
-                    label: const Text('Set author ID'),
+                    label: Text(context.t(S.setAuthorId)),
                   ),
                 ],
               ],
@@ -188,7 +191,7 @@ class _UserViewState extends State<UserView> {
     if (message != null && message.isNotEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ).showSnackBar(SnackBar(content: Text(context.t(message))));
       await _user.refresh();
     }
   }
@@ -209,8 +212,9 @@ class _UserViewState extends State<UserView> {
       _user.clear();
     } on FumoClientError catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t(error.message))),
+        );
       }
     }
   }

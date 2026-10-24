@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../core/i18n/keys.dart';
 import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
 import 'user_model.dart';
@@ -73,7 +74,7 @@ class UserController extends ChangeNotifier {
       if (_disposed || request != _generation) {
         return;
       }
-      error = 'Failed to load profile posts.';
+      error = S.profilePostsFailed;
       if (_loadedUsername != username) {
         page = null;
       }

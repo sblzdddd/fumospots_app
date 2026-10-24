@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import '../../core/i18n/keys.dart';
 import '../post/post_model.dart';
 
 part 'user_model.g.dart';
@@ -67,12 +68,12 @@ class UserPostSummary {
 
   String get statusLabel {
     if (hasPendingRevision) {
-      return 'Edit pending review';
+      return S.statusEditPending;
     }
     return switch (status) {
-      PostStatus.pending => 'Pending',
-      PostStatus.approved => 'Approved',
-      PostStatus.rejected => 'Rejected',
+      PostStatus.pending => S.statusPending,
+      PostStatus.approved => S.statusApproved,
+      PostStatus.rejected => S.statusRejected,
     };
   }
 

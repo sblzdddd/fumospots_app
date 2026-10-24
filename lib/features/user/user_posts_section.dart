@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/i18n/i18n.dart';
 import '../post/feed/post_feed_error_body.dart';
 import '../post/feed/post_feed_refresh.dart';
 import '../post/post_card.dart';
@@ -75,7 +76,7 @@ class _UserPostsSectionState extends State<UserPostsSection> {
                 child: Row(
                   children: [
                     Text(
-                      'My posts',
+                      context.t(S.myPosts),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const Spacer(),
@@ -88,7 +89,10 @@ class _UserPostsSectionState extends State<UserPostsSection> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        '${_controller.totalLikeCount} likes',
+                        context.t(
+                          S.likesCount,
+                          params: {'count': '${_controller.totalLikeCount}'},
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -111,7 +115,7 @@ class _UserPostsSectionState extends State<UserPostsSection> {
                 loadingFirst: loadingFirst,
                 columns: columns,
                 bottomPadding: bottomPadding,
-                emptyMessage: 'No posts yet.',
+                emptyMessage: context.t(S.noPostsYet),
                 itemBuilder: (context, index) {
                   final post = posts[index];
                   return PostCard(
