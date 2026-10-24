@@ -7,6 +7,7 @@ import 'features/auth/auth_controller.dart';
 import 'features/home/main_screen.dart';
 import 'features/settings/theme_controller.dart';
 import 'features/settings/visual_settings_controller.dart';
+import 'features/splash/splash_gate.dart';
 import 'utils/fumo_color_themes.dart';
 
 Future<void> main() async {
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
               child: child!,
             );
           },
-          home: const MainScreen(),
+          home: const SplashGate(child: MainScreen()),
           debugShowCheckedModeBanner: false,
         );
       },
