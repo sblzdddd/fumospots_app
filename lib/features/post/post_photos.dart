@@ -70,6 +70,7 @@ class PostPhotos extends StatefulWidget {
     required this.maxHeight,
     required this.index,
     required this.onIndex,
+    this.onOpen,
     this.postId,
   });
 
@@ -77,6 +78,9 @@ class PostPhotos extends StatefulWidget {
   final double maxHeight;
   final int index;
   final ValueChanged<int> onIndex;
+
+  /// Opens the full-screen viewer for the current page.
+  final ValueChanged<int>? onOpen;
 
   /// When set, reuses the feed thumbnail aspect for the default hero size.
   final int? postId;
@@ -189,10 +193,19 @@ class _PostPhotosState extends State<PostPhotos> {
                           ),
                         );
                       }
-                      return _PhotoPane(
+                      final pane = _PhotoPane(
                         imageUrl: uri,
                         thumbUrl: photo.thumbUrl,
                         cacheManager: _images.cacheManager,
+                      );
+                      final onOpen = widget.onOpen;
+                      if (onOpen == null) {
+                        return pane;
+                      }
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onOpen(photoIndex),
+                        child: pane,
                       );
                     },
                   ),

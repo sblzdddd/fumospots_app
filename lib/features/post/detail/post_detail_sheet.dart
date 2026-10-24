@@ -10,6 +10,7 @@ import '../post_model.dart';
 import '../post_photos.dart';
 import 'post_detail_body.dart';
 import 'post_detail_controller.dart';
+import 'post_photo_viewer.dart';
 
 /// Fraction of the safe area the post sheet covers when it first opens.
 const postDetailSheetInitialSize = 0.75;
@@ -137,6 +138,12 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
             maxHeight: maxHeroHeight,
             index: photoIndex,
             onIndex: _controller.setPhotoIndex,
+            onOpen: (index) => showPostPhotoViewer(
+              context,
+              photos: photos,
+              initialIndex: index,
+              onIndex: _controller.setPhotoIndex,
+            ),
           ),
         if (_controller.error != null)
           Padding(
@@ -203,7 +210,7 @@ class _DetailSkeleton extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 28,
+                height: 34,
                 width: 220,
                 decoration: BoxDecoration(
                   color: color,
