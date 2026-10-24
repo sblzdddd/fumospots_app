@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Floating dock child for [BottomBar]: Home, Map, Profile, then Add.
+/// Floating dock child for [BottomBar]: Posts, Map, Profile, then Add.
 class FloatingBottomDock extends StatelessWidget {
   const FloatingBottomDock({
     super.key,
@@ -55,9 +55,10 @@ class FloatingBottomDock extends StatelessWidget {
             _navSlot(
               width: widthFor(active: selectedIndex == 0),
               index: 0,
-              tooltip: 'Home',
-              icon: FontAwesomeIcons.house,
-              selectedIcon: FontAwesomeIcons.solidHouse,
+              tooltip: 'Posts',
+              icon: FontAwesomeIcons.tableCellsLarge,
+              selectedIcon: FontAwesomeIcons.tableCellsLarge,
+              label: 'Posts',
             ),
             if (showMap)
               _navSlot(
@@ -123,8 +124,10 @@ class FloatingBottomDock extends StatelessWidget {
     required String tooltip,
     required FaIconData icon,
     required FaIconData selectedIcon,
+    String? label,
   }) {
     final selected = selectedIndex == index;
+    final iconData = selected ? selectedIcon : icon;
     return AnimatedContainer(
       duration: _duration,
       curve: _curve,
@@ -137,7 +140,17 @@ class FloatingBottomDock extends StatelessWidget {
         decoration: _fillDecoration,
         tooltip: tooltip,
         semanticLabel: tooltip,
-        child: FaIcon(selected ? selectedIcon : icon, size: 18),
+        child: selected && label != null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FaIcon(iconData, size: 18),
+                  const SizedBox(width: 8),
+                  Text(label, maxLines: 1, softWrap: false),
+                ],
+              )
+            : FaIcon(iconData, size: 18),
       ),
     );
   }
