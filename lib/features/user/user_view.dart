@@ -9,14 +9,27 @@ import '../../core/services/fumo_client_error.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login/auth_login_methods.dart';
 import '../auth/login/auth_login_view.dart';
+import '../post/post_model.dart';
 import '../settings/settings_view.dart';
 import 'user_controller.dart';
 import 'user_model.dart';
 import 'user_posts_actions.dart';
 import 'user_posts_section.dart';
 
+typedef ShowUserPostInMap = void Function(int postId, PostLatLng location);
+
 class UserView extends StatefulWidget {
-  const UserView({super.key});
+  const UserView({
+    super.key,
+    this.onShowInMap,
+    this.onJumpToPosts,
+  });
+
+  /// When set, approved post sheets show the jump-to-map control.
+  final ShowUserPostInMap? onShowInMap;
+
+  /// Switches to the posts tab after a character chip is pressed in a sheet.
+  final VoidCallback? onJumpToPosts;
 
   @override
   State<UserView> createState() => _UserViewState();
@@ -182,8 +195,23 @@ class _UserViewState extends State<UserView> {
     );
   }
 
-  Future<void> _onOpenPost(UserPostSummary post) =>
-      openUserPost(context, post);
+  Future<void> _onOpenPost(UserPostSummary post) async {
+    final onShowInMap = widget.onShowInMap;
+    PostLatLng? showInMapAt;
+    await openUserPost(
+      context,
+      post,
+      onShowInMap: onShowInMap == null
+          ? null
+          : (location) => showInMapAt = location,
+      onCharacterSelected: widget.onJumpToPosts,
+    );
+    if (!mounted) return;
+    final focus = showInMapAt;
+    if (focus != null) {
+      onShowInMap!(post.id, focus);
+    }
+  }
 
   Future<void> _onEditPost(UserPostSummary post) async {
     final message = await editUserPost(context, post);

@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get_it/get_it.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +19,7 @@ Future<void> showPostDetailSheet(
   BuildContext context,
   int postId, {
   ValueChanged<PostLatLng>? onShowInMap,
+  VoidCallback? onCharacterSelected,
 }) {
   final previewThumbUrl = resolvePostPreviewThumb(postId);
   return showModalBottomSheet<void>(
@@ -44,6 +44,7 @@ Future<void> showPostDetailSheet(
               previewThumbUrl: previewThumbUrl,
               scrollController: scrollController,
               onShowInMap: onShowInMap,
+              onCharacterSelected: onCharacterSelected,
             ),
           );
         },
@@ -77,14 +78,15 @@ class PostDetailSheet extends StatefulWidget {
     this.previewThumbUrl,
     this.scrollController,
     this.onShowInMap,
+    this.onCharacterSelected,
   });
 
   final int postId;
   final String? previewThumbUrl;
   final ScrollController? scrollController;
 
-  /// When set (posts tab only), shows a full-width map jump control.
   final ValueChanged<PostLatLng>? onShowInMap;
+  final VoidCallback? onCharacterSelected;
 
   @override
   State<PostDetailSheet> createState() => _PostDetailSheetState();
@@ -93,10 +95,6 @@ class PostDetailSheet extends StatefulWidget {
 class _PostDetailSheetState extends State<PostDetailSheet> {
   late final PostDetailController _controller =
       GetIt.instance<PostDetailController>();
-
-  static final _showInMapButton = M3EButtonDecoration.styleFrom(
-    minimumSize: const Size(double.infinity, 48),
-  );
 
   @override
   void initState() {
@@ -190,19 +188,9 @@ class _PostDetailSheetState extends State<PostDetailSheet> {
             locale: deviceLocale(),
             liking: _controller.liking,
             onLike: _onLikePressed,
-          ),
-        if (showInMap)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-            child: M3EButton.icon(
-              onPressed: () => _onShowInMap(location),
-              style: M3EButtonStyle.filled,
-              size: M3EButtonSize.md,
-              shape: M3EButtonShape.round,
-              decoration: _showInMapButton,
-              icon: const FaIcon(FontAwesomeIcons.mapLocationDot, size: 16),
-              label: Text(context.t(S.showInMap)),
-            ),
+            onShowInMap:
+                showInMap ? () => _onShowInMap(location) : null,
+            onCharacterSelected: widget.onCharacterSelected,
           ),
         const SizedBox(height: 48),
       ],

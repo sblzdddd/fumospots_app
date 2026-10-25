@@ -73,19 +73,34 @@ class _MainScreenState extends State<MainScreen> {
     }
     final focus = showInMapAt;
     if (focus != null) {
-      setState(() {
-        _selectedIndex = 1;
-        _mapVisited = true;
-        _selectedPostId = id;
-        _mapFocus = MapFocusTarget(
-          lat: focus.lat,
-          lng: focus.lng,
-          generation: (_mapFocus?.generation ?? 0) + 1,
-        );
-      });
+      _focusMapOnPost(id, focus);
       return;
     }
     setState(() => _selectedPostId = null);
+  }
+
+  void _showUserPostInMap(int postId, PostLatLng location) {
+    _focusMapOnPost(postId, location);
+  }
+
+  void _jumpToPosts() {
+    setState(() {
+      _selectedIndex = 0;
+      _selectedPostId = null;
+    });
+  }
+
+  void _focusMapOnPost(int postId, PostLatLng location) {
+    setState(() {
+      _selectedIndex = 1;
+      _mapVisited = true;
+      _selectedPostId = postId;
+      _mapFocus = MapFocusTarget(
+        lat: location.lat,
+        lng: location.lng,
+        generation: (_mapFocus?.generation ?? 0) + 1,
+      );
+    });
   }
 
   void _onDestinationSelected(int index) {
@@ -202,7 +217,10 @@ class _MainScreenState extends State<MainScreen> {
                   )
                 else
                   const SizedBox.expand(),
-              const UserView(),
+              UserView(
+                onShowInMap: mapPageEnabled ? _showUserPostInMap : null,
+                onJumpToPosts: _jumpToPosts,
+              ),
             ],
           ),
           child: FloatingBottomDock(

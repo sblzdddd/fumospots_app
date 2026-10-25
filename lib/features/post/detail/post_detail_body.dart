@@ -15,12 +15,20 @@ class PostDetailBody extends StatelessWidget {
     required this.locale,
     this.liking = false,
     this.onLike,
+    this.onShowInMap,
+    this.onCharacterSelected,
   });
 
   final PostDetail detail;
   final String locale;
   final bool liking;
   final VoidCallback? onLike;
+
+  /// When set, shows a full-width map jump control under the capture time.
+  final VoidCallback? onShowInMap;
+
+  /// Called after a character chip applies the feed filter (before the sheet pops).
+  final VoidCallback? onCharacterSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +124,18 @@ class PostDetailBody extends StatelessWidget {
             icon: FontAwesomeIcons.clock,
             child: Text(formatDateTime(detail.capturedAt, locale), style: bodyStyle),
           ),
+          if (onShowInMap != null) ...[
+            const SizedBox(height: 16),
+            M3EButton.icon(
+              onPressed: onShowInMap,
+              style: M3EButtonStyle.tonal,
+              size: M3EButtonSize.sm,
+              shape: M3EButtonShape.round,
+              decoration: _showInMapButton,
+              icon: const FaIcon(FontAwesomeIcons.mapLocationDot, size: 16),
+              label: Text(context.t(S.showInMap)),
+            ),
+          ],
           if (detail.body != null && detail.body!.isNotEmpty) ...[
             const SizedBox(height: 16),
             Divider(height: 1, color: colors.onSurface.withValues(alpha: 0.1)),
@@ -145,7 +165,7 @@ class PostDetailBody extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 8,
+              spacing: 4,
               runSpacing: 8,
               children: [
                 for (final character in detail.characters)
@@ -153,11 +173,11 @@ class PostDetailBody extends StatelessWidget {
                     onPressed: () {
                       GetIt.instance<CharacterFilterController>()
                           .setSelectedIds([character.id]);
+                      onCharacterSelected?.call();
                       Navigator.of(context).maybePop();
                     },
-                    style: M3EButtonStyle.tonal,
+                    style: M3EButtonStyle.outlined,
                     shape: M3EButtonShape.round,
-                    size: M3EButtonSize.sm,
                     child: Text(characterName(character, locale)),
                   ),
               ],
@@ -167,6 +187,10 @@ class PostDetailBody extends StatelessWidget {
       ),
     );
   }
+
+  static final _showInMapButton = M3EButtonDecoration.styleFrom(
+    minimumSize: const Size(double.infinity, 48),
+  );
 }
 
 class _IconRow extends StatelessWidget {
