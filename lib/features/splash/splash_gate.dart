@@ -16,9 +16,8 @@ class SplashGate extends StatefulWidget {
 }
 
 class _SplashGateState extends State<SplashGate> {
-  static const _minVisible = Duration(milliseconds: 700);
+  static const _minVisible = Duration(milliseconds: 1000);
   static const _maxVisible = Duration(seconds: 8);
-  static const _fade = Duration(milliseconds: 380);
 
   final PostFeedController _feed = GetIt.instance<PostFeedController>();
   Timer? _minTimer;
@@ -53,6 +52,12 @@ class _SplashGateState extends State<SplashGate> {
 
   void _onFeed() => _tryHide();
 
+  void _finishExit() {
+    if (_hiding && mounted && !_gone) {
+      setState(() => _gone = true);
+    }
+  }
+
   bool get _homeReady => !_feed.showingSkeletons;
 
   void _tryHide() {
@@ -72,24 +77,11 @@ class _SplashGateState extends State<SplashGate> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        ExcludeSemantics(
-          excluding: !_gone && !_hiding,
-          child: widget.child,
-        ),
+        ExcludeSemantics(excluding: !_gone && !_hiding, child: widget.child),
         if (!_gone)
           IgnorePointer(
             ignoring: _hiding,
-            child: AnimatedOpacity(
-              opacity: _hiding ? 0 : 1,
-              duration: _fade,
-              curve: Curves.easeOutCubic,
-              onEnd: () {
-                if (_hiding && mounted && !_gone) {
-                  setState(() => _gone = true);
-                }
-              },
-              child: const SplashView(),
-            ),
+            child: SplashView(exiting: _hiding, onExitEnd: _finishExit),
           ),
       ],
     );
