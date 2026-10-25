@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:get_it/get_it.dart';
 import 'package:material_ui/material_ui.dart';
@@ -131,70 +132,86 @@ class _MainScreenState extends State<MainScreen> {
     final barWidth =
         availableWidth < maxBarWidth ? availableWidth : maxBarWidth;
 
-    return Scaffold(
-      body: BottomBar(
-        layout: BottomBarLayout(
-          width: barWidth,
-          maxWidth: maxBarWidth,
-          offset: bottomOffset,
-          borderRadius: const BorderRadius.all(Radius.circular(32)),
-          clip: Clip.none,
-        ),
-        motion: const BottomBarMotion.cupertino(
-          preset: BottomBarCupertinoMotion.snappy,
-          duration: Duration(milliseconds: 460),
-          extraBounce: 0.03,
-        ),
-        scrollBehavior: const BottomBarScrollBehavior(
-          hideOnScroll: true,
-          showAtStart: true,
-        ),
-        theme: BottomBarThemeData(
-          barDecoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.2),
-                blurRadius: 30,
-                offset: const Offset(0, 16),
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+      statusBarBrightness: isLight ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: cs.surface,
+      systemNavigationBarDividerColor: cs.surface,
+      systemNavigationBarIconBrightness:
+          isLight ? Brightness.dark : Brightness.light,
+      systemNavigationBarContrastEnforced: false,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        backgroundColor: cs.surface,
+        body: BottomBar(
+          layout: BottomBarLayout(
+            width: barWidth,
+            maxWidth: maxBarWidth,
+            offset: bottomOffset,
+            borderRadius: const BorderRadius.all(Radius.circular(32)),
+            clip: Clip.none,
+          ),
+          motion: const BottomBarMotion.cupertino(
+            preset: BottomBarCupertinoMotion.snappy,
+            duration: Duration(milliseconds: 460),
+            extraBounce: 0.03,
+          ),
+          scrollBehavior: const BottomBarScrollBehavior(
+            hideOnScroll: true,
+            showAtStart: true,
+          ),
+          theme: BottomBarThemeData(
+            barDecoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            iconDecoration: BoxDecoration(
+              color: cs.primary,
+              shape: BoxShape.circle,
+            ),
+            iconWidth: 40,
+            iconHeight: 40,
+          ),
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              PostFeedView(
+                key: _feedKey,
+                contentInsetTop: topInset,
+                onOpenPost: _openPost,
               ),
+              if (mapPageEnabled)
+                if (_mapVisited)
+                  SpotMapView(
+                    contentInsetTop: topInset,
+                    selectedPostId: _selectedPostId,
+                    focusTarget: _mapFocus,
+                    onOpenPost: _openPost,
+                  )
+                else
+                  const SizedBox.expand(),
+              const UserView(),
             ],
           ),
-          iconDecoration: BoxDecoration(
-            color: cs.primary,
-            shape: BoxShape.circle,
+          child: FloatingBottomDock(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onDestinationSelected,
+            onAddPressed: _onAddPressed,
+            blurEnabled: _visual.blurEnabled,
+            showMap: mapPageEnabled,
           ),
-          iconWidth: 40,
-          iconHeight: 40,
-        ),
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            PostFeedView(
-              key: _feedKey,
-              contentInsetTop: topInset,
-              onOpenPost: _openPost,
-            ),
-            if (mapPageEnabled)
-              if (_mapVisited)
-                SpotMapView(
-                  contentInsetTop: topInset,
-                  selectedPostId: _selectedPostId,
-                  focusTarget: _mapFocus,
-                  onOpenPost: _openPost,
-                )
-              else
-                const SizedBox.expand(),
-            const UserView(),
-          ],
-        ),
-        child: FloatingBottomDock(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onDestinationSelected,
-          onAddPressed: _onAddPressed,
-          blurEnabled: _visual.blurEnabled,
-          showMap: mapPageEnabled,
         ),
       ),
     );
