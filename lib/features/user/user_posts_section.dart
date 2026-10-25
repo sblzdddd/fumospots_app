@@ -7,6 +7,7 @@ import '../post/feed/post_feed_error_body.dart';
 import '../post/feed/post_feed_refresh.dart';
 import '../post/post_card.dart';
 import '../post/post_masonry_grid.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'user_controller.dart';
 import 'user_model.dart';
 
@@ -72,31 +73,23 @@ class _UserPostsSectionState extends State<UserPostsSection> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
                 child: Row(
                   children: [
                     Text(
-                      context.t(S.myPosts),
-                      style: Theme.of(context).textTheme.titleMedium,
+                      '${context.t(S.myPosts)}（${posts.length}）',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontFamily: 'Noto Sans SC'),
                     ),
                     const Spacer(),
                     if (_controller.page != null) ...[
                       Text(
-                        '${posts.length}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        _controller.totalLikeCount.toString(),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        context.t(
-                          S.likesCount,
-                          params: {'count': '${_controller.totalLikeCount}'},
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      const SizedBox(width: 6),
+                      FaIcon(FontAwesomeIcons.heart, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ],
                   ],
                 ),
