@@ -1,5 +1,13 @@
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.io.FileInputStream
+import java.util.Properties
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 
 plugins {
     id("com.android.application")
@@ -31,6 +39,15 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
 
     buildTypes {
         release {
@@ -51,10 +68,11 @@ android {
                 "proguard-rules.pro",
             )
 
-            // Ask AGP to strip native debug symbols from packaged .so files.
             ndk {
-                debugSymbolLevel = "NONE"
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
+
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
