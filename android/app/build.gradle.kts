@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fumospots_app"
+    namespace = "org.lc_022.fumospots"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.fumospots_app"
+        applicationId = "org.lc_022.fumospots"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -66,7 +66,7 @@ android {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
             val versionName = variant.versionName ?: defaultConfig.versionName ?: "0.0.0"
             val arch = output.getFilter(com.android.build.OutputFile.ABI) ?: "universal"
-            output.outputFileName = "FumoSpots_${versionName}_${arch}.apk"
+            output.outputFileName = "Fumospots_${versionName}_${arch}.apk"
         }
     }
 }
@@ -100,7 +100,7 @@ afterEvaluate {
                         splitApk.matchEntire(apk.name)?.groupValues?.get(1)
                             ?: universalApk.matchEntire(apk.name)?.let { "universal" }
                             ?: return@forEach
-                    val renamed = apkDir.resolve("FumoSpots_${versionName}_${arch}.apk")
+                    val renamed = apkDir.resolve("Fumospots_${versionName}_${arch}.apk")
                     Files.copy(
                         apk.toPath(),
                         renamed.toPath(),
